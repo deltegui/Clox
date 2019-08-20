@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <strings.h>
+#include <memory.h>
 #include "lexer.h"
 #include "logger.h"
 #include "sysexits.h"
@@ -8,7 +8,7 @@
 //END OF SOURCE
 #define EOS '\0'
 
-Token* create_token_with_literal(token_t type, char* lexeme, void* literal, line_t line) {
+Token* create_token(token_t type, char* lexeme, char* literal, line_t line) {
     Token* token = (Token*) malloc(sizeof(Token));
     if(!token) {
         return NULL;
@@ -20,8 +20,12 @@ Token* create_token_with_literal(token_t type, char* lexeme, void* literal, line
     return token;
 }
 
-Token* create_token(token_t type, line_t line) {
-    return create_token_with_literal(type, (char*)type, NULL, line);
+void destroy_token(Token* token) {
+    free(token->lexeme);
+    if(token->literal) {
+        free(token->literal);
+    }
+    free(token);
 }
 
 TokenQueue* create_queue() {
@@ -67,7 +71,7 @@ Token* pull(TokenQueue* queue) {
 void destroy_all_queue(TokenQueue* queue) {
     while(queue->size > 0) {
         Token* token = pull(queue);
-        free(token);
+        destroy_token(token);
     }
     free(queue);
 }
@@ -83,7 +87,7 @@ void print_queue(TokenQueue queue) {
     QueueNode* current = queue.last;
     while(current != NULL) {
         Token* token = current->value;
-        printf("TOKEN with TYPE: %s, Lexeme: %s, literal: %s, in line: %ld\n",
+        printf("TOKEN with TYPE: %d, Lexeme: %s, literal: %s, in line: %ld\n",
             token->type,
             token->lexeme,
             token->literal,
@@ -96,6 +100,7 @@ typedef struct {
     line_t _current_line;
     char* _source; //YOU MUST NOT FREE THIS SHIT
     unsigned long _position;
+    unsigned long _start_latest_lexeme;
     TokenQueue* _tokens; //THIS NEITHER
 } Source;
 
@@ -138,17 +143,31 @@ void advance(Source* source, unsigned long poisitons) {
     if(is_end(*source)) {
         return;
     }
+    if(is_current_equal(*source, '\n')) {
+        source->_current_line++;
+    }
     source->_position++;
 }
 
 void advance_until(Source* source, char limit) {
     while(!is_current_equal(*source, limit)) {
+        if(is_end(*source)) {
+            return;
+        }
         advance(source, 1);
     }
 }
 
+void push_token_with_literal(Source* source, token_t token, char* literal) {
+    int buffer_size = source->_position - source->_start_latest_lexeme;
+    char* lexeme = malloc(buffer_size);
+    strncpy(lexeme, &source->_source[source->_start_latest_lexeme], buffer_size);
+    lexeme[buffer_size] = '\0';
+    push(source->_tokens, create_token(token, lexeme, literal, source->_current_line));
+}
+
 void push_token(Source* source, token_t token) {
-    push(source->_tokens, create_token(token, source->_current_line));
+    push_token_with_literal(source, token, NULL);
 }
 
 void parse_token(Source* source) {
@@ -166,24 +185,28 @@ void parse_token(Source* source) {
     case '*': push_token(source, TOKEN_STAR); break;
     case '!': {
         if(is_current_equal(*source, '=')) {
+            advance(source, 1);
             push_token(source, TOKEN_BANG_EQUAL); break;
         }
         push_token(source, TOKEN_BANG); break;
     }
     case '=': {
         if(is_current_equal(*source, '=')) {
+            advance(source, 1);
             push_token(source, TOKEN_EQUAL_EQUAL); break;
         }
         push_token(source, TOKEN_EQUAL); break;
     }
     case '>': {
         if(is_current_equal(*source, '=')) {
+            advance(source, 1);
             push_token(source, TOKEN_GREATER_EQUAL); break;
         }
         push_token(source, TOKEN_GREATER); break;
     }
     case '<': {
         if(is_current_equal(*source, '=')) {
+            advance(source, 1);
             push_token(source, TOKEN_LESS_EQUAL); break;
         }
         push_token(source, TOKEN_LESS); break;
@@ -200,6 +223,20 @@ void parse_token(Source* source) {
         }
         push_token(source, TOKEN_SLASH); break;
     }
+    case '"': {
+        advance_until(source, '"');
+        if(is_end(*source)) {
+            log_error(source->_current_line, "Unterminated string");
+            break;
+        }
+        advance(source, 1);
+        int buffer_size = (source->_position - source->_start_latest_lexeme - 2); //Without ""
+        char* literal = malloc(buffer_size + 1); // But with null terminator
+        strncpy(literal, &source->_source[source->_start_latest_lexeme + 1], buffer_size);
+        literal[buffer_size] = '\0';
+        push_token_with_literal(source, TOKEN_STRING, literal);
+        break;
+    }
     default: {
         char buffer[24];
         sprintf(buffer, "Unexpected character %c", c);
@@ -211,6 +248,7 @@ void parse_token(Source* source) {
 TokenQueue* tokenize_source(char* raw) {
     Source source = create_source_from(raw);
     while(!is_end(source)) {
+        source._start_latest_lexeme = source._position;
         parse_token(&source);
     }
     return source._tokens;

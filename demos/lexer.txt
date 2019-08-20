@@ -28,3 +28,6 @@ fun hola() {
     }
     var pipo = 11;
 }
+"This is my stirng
+multiline fuck
+"

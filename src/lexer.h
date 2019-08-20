@@ -1,52 +1,57 @@
 #ifndef LEXER_H
 #define LEXER_H
 
-typedef char* token_t;
+typedef unsigned short token_t;
 typedef unsigned long line_t;
 
 //Single character tokens
-#define TOKEN_LEFT_PAREN "("
-#define TOKEN_RIGHT_PAREN ")"
-#define TOKEN_LEFT_BRACE "{"
-#define TOKEN_RIGHT_BRACE "}"
-#define TOKEN_COMMA ","
-#define TOKEN_DOT "."
-#define TOKEN_MINUS "-"
-#define TOKEN_PLUS "+"
-#define TOKEN_SEMICOLON ";"
-#define TOKEN_SLASH "/"
-#define TOKEN_STAR "*"
+#define TOKEN_LEFT_PAREN 0
+#define TOKEN_RIGHT_PAREN 1
+#define TOKEN_LEFT_BRACE 2
+#define TOKEN_RIGHT_BRACE 3
+#define TOKEN_COMMA 4
+#define TOKEN_DOT 5
+#define TOKEN_MINUS 6
+#define TOKEN_PLUS 7
+#define TOKEN_SEMICOLON 8
+#define TOKEN_SLASH 9
+#define TOKEN_STAR 10
 
 //One or two character tokens
-#define TOKEN_BANG "!"
-#define TOKEN_BANG_EQUAL "!="
+#define TOKEN_BANG 11
+#define TOKEN_BANG_EQUAL 12
 
-#define TOKEN_EQUAL "="
-#define TOKEN_EQUAL_EQUAL "=="
+#define TOKEN_EQUAL 13
+#define TOKEN_EQUAL_EQUAL 14
 
-#define TOKEN_GREATER ">"
-#define TOKEN_GREATER_EQUAL ">="
+#define TOKEN_GREATER 15
+#define TOKEN_GREATER_EQUAL 16
 
-#define TOKEN_LESS "<"
-#define TOKEN_LESS_EQUAL "<="
+#define TOKEN_LESS 17
+#define TOKEN_LESS_EQUAL 18
 
 //Keywords
-#define TOKEN_AND "and"
-#define TOKEN_CLASS "class"
-#define TOKEN_ELSE "else"
-#define TOKEN_FALSE "false"
-#define TOKEN_FUN "fun"
-#define TOKEN_FOR "for"
-#define TOKEN_IF "if"
-#define TOKEN_NIL "nil"
-#define TOKEN_OR "or"
-#define TOKEN_PRINT "print"
-#define TOKEN_RETURN "return"
-#define TOKEN_SUPER "super"
-#define TOKEN_THIS "this"
-#define TOKEN_TRUE "true"
-#define TOKEN_VAR "var"
-#define TOKEN_WHILE "while"
+#define TOKEN_AND 19
+#define TOKEN_CLASS 20
+#define TOKEN_ELSE 21
+#define TOKEN_FALSE 22
+#define TOKEN_FUN 23
+#define TOKEN_FOR 24
+#define TOKEN_IF 25
+#define TOKEN_NIL 26
+#define TOKEN_OR 27
+#define TOKEN_PRINT 28
+#define TOKEN_RETURN 29
+#define TOKEN_SUPER 30
+#define TOKEN_THIS 31
+#define TOKEN_TRUE 32
+#define TOKEN_VAR 33
+#define TOKEN_WHILE 34
+
+//Literals
+#define TOKEN_STRING 35
+#define TOKEN_NUMBER 36
+#define TOKEN_IDENTIFIER 37
 
 typedef struct {
     token_t type;
