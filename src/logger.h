@@ -11,4 +11,9 @@ void log_fatal(int code, char* message);
  */
 void log_fatal_line(int code, int line, char* message);
 
+/**
+ * Logs to stderr a message
+ */
+void log_error(int line, char* message);
+
 #endif

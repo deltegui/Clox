@@ -7,7 +7,9 @@
 #include "lexer.h"
 
 void run(char* raw) {
-    tokenize_source(raw);
+    TokenQueue* queue = tokenize_source(raw);
+    print_queue(*queue);
+    destroy_all_queue(queue);
 }
 
 void runFile(char* path) {

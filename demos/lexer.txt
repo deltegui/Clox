@@ -1,0 +1,30 @@
+// this is a comment
+(( )){} // grouping stuff
+!*+-/=<> <= == // operators
+
+fun hola() {
+    var a = 2 / 33;
+    if(a != 0) {
+        ...
+    }
+    //Esto es mi puto comentario
+    if(!a) {
+        ...
+    }
+    if(a == 0) {
+
+    }
+    if(a >= 0) {
+
+    }
+    if(a > 0) {
+
+    }
+    if(a <= 0) {
+
+    }
+    if(a < 0) {
+
+    }
+    var pipo = 11;
+}

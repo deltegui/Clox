@@ -14,12 +14,10 @@ int digitsof(int number) {
     return digits;
 }
 
-
 void log_fatal(int code, char* message) {
     fprintf(stderr, "%s\n", message);
     exit(code);
 }
-
 
 void log_fatal_line(int code, int line, char* message) {
     size_t message_size = sizeof(message);
@@ -27,4 +25,8 @@ void log_fatal_line(int code, int line, char* message) {
     char buffer[message_size + line_digits];
     sprintf(buffer, "[%d] %s", line, message);
     log_fatal(code, buffer);
+}
+
+void log_error(int line, char* message) {
+    fprintf(stderr, "[%d] %s\n", line, message);
 }

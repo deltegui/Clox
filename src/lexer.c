@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <strings.h>
 #include "lexer.h"
 #include "logger.h"
 #include "sysexits.h"
@@ -19,8 +20,8 @@ Token* create_token_with_literal(token_t type, char* lexeme, void* literal, line
     return token;
 }
 
-Token* create_token(token_t type, char* lexeme, line_t line) {
-    return create_token_with_literal(type, lexeme, NULL, line);
+Token* create_token(token_t type, line_t line) {
+    return create_token_with_literal(type, (char*)type, NULL, line);
 }
 
 TokenQueue* create_queue() {
@@ -58,13 +59,20 @@ Token* pull(TokenQueue* queue) {
     Token* value = queue->last->value;
     QueueNode* to_destroy = queue->last;
     queue->last = queue->last->next;
-    free(to_destroy->value);
     free(to_destroy);
     queue->size--;
     return value;
 }
 
-void destroy(TokenQueue* queue) {
+void destroy_all_queue(TokenQueue* queue) {
+    while(queue->size > 0) {
+        Token* token = pull(queue);
+        free(token);
+    }
+    free(queue);
+}
+
+void destroy_queue(TokenQueue* queue) {
     while(queue->size > 0) {
         pull(queue);
     }
@@ -75,7 +83,7 @@ void print_queue(TokenQueue queue) {
     QueueNode* current = queue.last;
     while(current != NULL) {
         Token* token = current->value;
-        printf("TOKEN with TYPE: %d, Lexeme: %s, literal: %s, in line: %ld\n",
+        printf("TOKEN with TYPE: %s, Lexeme: %s, literal: %s, in line: %ld\n",
             token->type,
             token->lexeme,
             token->literal,
@@ -86,9 +94,9 @@ void print_queue(TokenQueue queue) {
 
 typedef struct {
     line_t _current_line;
-    char* _source;
+    char* _source; //YOU MUST NOT FREE THIS SHIT
     unsigned long _position;
-    TokenQueue* _tokens;
+    TokenQueue* _tokens; //THIS NEITHER
 } Source;
 
 Source create_source_from(char* raw_source) {
@@ -118,11 +126,11 @@ char consume(Source* source) {
     return current;
 }
 
-int is_next_equal(Source source, char character) {
+int is_current_equal(Source source, char character) {
     if(is_end(source)) {
         return 0;
     }
-    char next = source._source[++source._position];
+    char next = source._source[source._position];
     return next == character;
 }
 
@@ -133,16 +141,77 @@ void advance(Source* source, unsigned long poisitons) {
     source->_position++;
 }
 
+void advance_until(Source* source, char limit) {
+    while(!is_current_equal(*source, limit)) {
+        advance(source, 1);
+    }
+}
+
+void push_token(Source* source, token_t token) {
+    push(source->_tokens, create_token(token, source->_current_line));
+}
+
+void parse_token(Source* source) {
+    char c = consume(source);
+    switch(c) {
+    case '(': push_token(source, TOKEN_LEFT_PAREN); break;
+    case ')': push_token(source, TOKEN_RIGHT_PAREN); break;
+    case '{': push_token(source, TOKEN_LEFT_BRACE); break;
+    case '}': push_token(source, TOKEN_RIGHT_BRACE); break;
+    case ',': push_token(source, TOKEN_COMMA); break;
+    case '.': push_token(source, TOKEN_DOT); break;
+    case '-': push_token(source, TOKEN_MINUS); break;
+    case '+': push_token(source, TOKEN_PLUS); break;
+    case ';': push_token(source, TOKEN_SEMICOLON); break;
+    case '*': push_token(source, TOKEN_STAR); break;
+    case '!': {
+        if(is_current_equal(*source, '=')) {
+            push_token(source, TOKEN_BANG_EQUAL); break;
+        }
+        push_token(source, TOKEN_BANG); break;
+    }
+    case '=': {
+        if(is_current_equal(*source, '=')) {
+            push_token(source, TOKEN_EQUAL_EQUAL); break;
+        }
+        push_token(source, TOKEN_EQUAL); break;
+    }
+    case '>': {
+        if(is_current_equal(*source, '=')) {
+            push_token(source, TOKEN_GREATER_EQUAL); break;
+        }
+        push_token(source, TOKEN_GREATER); break;
+    }
+    case '<': {
+        if(is_current_equal(*source, '=')) {
+            push_token(source, TOKEN_LESS_EQUAL); break;
+        }
+        push_token(source, TOKEN_LESS); break;
+    }
+    case '\n': source->_current_line++; break;
+    case ' ':
+    case '\r':
+    case '\t':
+        break;
+    case '/': {
+        if(is_current_equal(*source, '/')) {
+            advance_until(source, '\n');
+            break; 
+        }
+        push_token(source, TOKEN_SLASH); break;
+    }
+    default: {
+        char buffer[24];
+        sprintf(buffer, "Unexpected character %c", c);
+        log_error(source->_current_line, buffer);
+    }
+    }
+}
+
 TokenQueue* tokenize_source(char* raw) {
     Source source = create_source_from(raw);
     while(!is_end(source)) {
-        printf("%c", consume(&source));
+        parse_token(&source);
     }
-    Token* t = create_token(TOKEN_AND, "and", 232);
-    Token* t2 = create_token(TOKEN_VAR, "var", 231);
-    push(source._tokens, t);
-    push(source._tokens, t2);
-    print_queue(*source._tokens);
-    destroy(source._tokens);
-    return NULL;
+    return source._tokens;
 }
