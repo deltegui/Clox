@@ -14,8 +14,7 @@ char* read_source(char* source_path) {
     long size = ftell(source_file);
     rewind(source_file);
     if(size <= 0) {
-        char* fake = malloc(1);
-        return fake;
+        log_fatal(EX_SOFTWARE, "Something strange happened while reading file...");
     }
     char* buffer = (char*) malloc(size);
     if(!buffer) {

@@ -4,9 +4,10 @@
 
 #include "source_loader.h"
 #include "logger.h"
+#include "lexer.h"
 
-void run(char* source) {
-    printf("%s", source);
+void run(char* raw) {
+    tokenize_source(raw);
 }
 
 void runFile(char* path) {
