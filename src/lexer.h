@@ -51,18 +51,39 @@ typedef unsigned long line_t;
 typedef struct {
     token_t type;
     char* lexeme;
-    void* literal;
+    char* literal;
     line_t line;
 } Token;
 
+typedef struct QueueNode {
+    struct QueueNode* next;
+    Token* value;
+} QueueNode;
+
 typedef struct {
-    Token* tokens;
+    QueueNode* first;
+    QueueNode* last;
     unsigned long size;
-} TokenVector;
+} TokenQueue;
 
 /**
  * Passes lox source to tokens
  */
-TokenVector* tokenize_source(char* source);
+TokenQueue* tokenize_source(char* source);
+
+/**
+ * Pulls data from TokenQueue
+ */
+Token* pull(TokenQueue* queue);
+
+/**
+ * Frees TokenQueue
+ */
+void destroy(TokenQueue* queue);
+
+/**
+ * Prints queue without modify it
+ */
+void print_queue(TokenQueue queue);
 
 #endif
