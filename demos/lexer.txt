@@ -31,3 +31,7 @@ fun hola() {
 "This is my stirng
 multiline fuck
 "
+123
+123.231231
+123123.
+.123123

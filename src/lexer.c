@@ -122,6 +122,16 @@ int is_end(Source source) {
     return current == EOS;
 }
 
+int is_digit(char digit) {
+    return digit >= '0' && digit <= '9';
+}
+
+int is_alpha(char alpha) {
+    return (alpha >= 'A' && alpha <= 'Z') || 
+           (alpha >= 'a' && alpha <= 'z') ||
+           (alpha == '_');
+}
+
 char consume(Source* source) {
     if(is_end(*source)) {
         return EOS;
@@ -135,11 +145,22 @@ int is_current_equal(Source source, char character) {
     if(is_end(source)) {
         return 0;
     }
-    char next = source._source[source._position];
-    return next == character;
+    char current = source._source[source._position];
+    return current == character;
 }
 
-void advance(Source* source, unsigned long poisitons) {
+int is_next_digit(Source source) {
+    if(is_end(source)) {
+        return 0;
+    }
+    char next = source._source[source._position + 1];
+    if(next == EOS) {
+        return 0;
+    }
+    return is_digit(next);
+}
+
+void advance(Source* source) {
     if(is_end(*source)) {
         return;
     }
@@ -154,8 +175,32 @@ void advance_until(Source* source, char limit) {
         if(is_end(*source)) {
             return;
         }
-        advance(source, 1);
+        advance(source);
     }
+}
+
+int is_current_digit(Source source) {
+    if(is_end(source)) {
+        return 0;
+    }
+    char current = source._source[source._position];
+    return is_digit(current);
+}
+
+int is_current_alpha(Source source) {
+    if(is_end(source)) {
+        return 0;
+    }
+    char current = source._source[source._position];
+    return is_alpha(current);
+}
+
+char* copy_source_substr(Source source) {
+    int buffer_size = (source._position - source._start_latest_lexeme);
+    char* copy = malloc(buffer_size + 1);
+    strncpy(copy, &source._source[source._start_latest_lexeme], buffer_size);
+    copy[buffer_size] = '\0';
+    return copy;
 }
 
 void push_token_with_literal(Source* source, token_t token, char* literal) {
@@ -168,6 +213,77 @@ void push_token_with_literal(Source* source, token_t token, char* literal) {
 
 void push_token(Source* source, token_t token) {
     push_token_with_literal(source, token, NULL);
+}
+
+int is_keyword(Source source) {
+    char* buffered = copy_source_substr(source);
+    int keyword = 0;
+    if(strcmp(buffered, "and") == 0) {
+        push_token(&source, TOKEN_AND);
+        keyword = 1;
+    }
+    if(strcmp(buffered, "class") == 0) {
+        push_token(&source, TOKEN_CLASS);
+        keyword = 1;
+    }
+    if(strcmp(buffered, "else") == 0) {
+        push_token(&source, TOKEN_ELSE);
+        keyword = 1;
+    }
+    if(strcmp(buffered, "false") == 0) {
+        push_token(&source, TOKEN_FALSE);
+        keyword = 1;
+    }
+    if(strcmp(buffered, "for") == 0) {
+        push_token(&source, TOKEN_FOR);
+        keyword = 1;
+    }
+    if(strcmp(buffered, "fun") == 0) {
+        push_token(&source, TOKEN_FUN);
+        keyword = 1;
+    }
+    if(strcmp(buffered, "if") == 0) {
+        push_token(&source, TOKEN_IF);
+        keyword = 1;
+    }
+    if(strcmp(buffered, "nil") == 0) {
+        push_token(&source, TOKEN_NIL);
+        keyword = 1;
+    }
+    if(strcmp(buffered, "or") == 0) {
+        push_token(&source, TOKEN_OR);
+        keyword = 1;
+    }
+    if(strcmp(buffered, "print") == 0) {
+        push_token(&source, TOKEN_PRINT);
+        keyword = 1;
+    }
+    if(strcmp(buffered, "return") == 0) {
+        push_token(&source, TOKEN_RETURN);
+        keyword = 1;
+    }
+    if(strcmp(buffered, "super") == 0) {
+        push_token(&source, TOKEN_SUPER);
+        keyword = 1;
+    }
+    if(strcmp(buffered, "this") == 0) {
+        push_token(&source, TOKEN_THIS);
+        keyword = 1;
+    }
+    if(strcmp(buffered, "true") == 0) {
+        push_token(&source, TOKEN_TRUE);
+        keyword = 1;
+    }
+    if(strcmp(buffered, "var") == 0) {
+        push_token(&source, TOKEN_VAR);
+        keyword = 1;
+    }
+    if(strcmp(buffered, "while") == 0) {
+        push_token(&source, TOKEN_WHILE);
+        keyword = 1;
+    }
+    free(buffered);
+    return keyword;
 }
 
 void parse_token(Source* source) {
@@ -185,28 +301,28 @@ void parse_token(Source* source) {
     case '*': push_token(source, TOKEN_STAR); break;
     case '!': {
         if(is_current_equal(*source, '=')) {
-            advance(source, 1);
+            advance(source);
             push_token(source, TOKEN_BANG_EQUAL); break;
         }
         push_token(source, TOKEN_BANG); break;
     }
     case '=': {
         if(is_current_equal(*source, '=')) {
-            advance(source, 1);
+            advance(source);
             push_token(source, TOKEN_EQUAL_EQUAL); break;
         }
         push_token(source, TOKEN_EQUAL); break;
     }
     case '>': {
         if(is_current_equal(*source, '=')) {
-            advance(source, 1);
+            advance(source);
             push_token(source, TOKEN_GREATER_EQUAL); break;
         }
         push_token(source, TOKEN_GREATER); break;
     }
     case '<': {
         if(is_current_equal(*source, '=')) {
-            advance(source, 1);
+            advance(source);
             push_token(source, TOKEN_LESS_EQUAL); break;
         }
         push_token(source, TOKEN_LESS); break;
@@ -229,7 +345,7 @@ void parse_token(Source* source) {
             log_error(source->_current_line, "Unterminated string");
             break;
         }
-        advance(source, 1);
+        advance(source);
         int buffer_size = (source->_position - source->_start_latest_lexeme - 2); //Without ""
         char* literal = malloc(buffer_size + 1); // But with null terminator
         strncpy(literal, &source->_source[source->_start_latest_lexeme + 1], buffer_size);
@@ -238,6 +354,28 @@ void parse_token(Source* source) {
         break;
     }
     default: {
+        if(is_digit(c)) {
+            while(is_current_digit(*source)) {
+                advance(source);
+            }
+            if(is_current_equal(*source, '.') && is_next_digit(*source)) {
+                advance(source);
+                while(is_current_digit(*source)) {
+                    advance(source);
+                }   
+            }
+            push_token_with_literal(source, TOKEN_NUMBER, copy_source_substr(*source));
+            break;
+        }
+        if(is_alpha(c)) {
+            while(is_current_alpha(*source)) {
+                advance(source);
+            }
+            if(!is_keyword(*source)) {
+                push_token_with_literal(source, TOKEN_IDENTIFIER, copy_source_substr(*source));
+            }
+            break;
+        }
         char buffer[24];
         sprintf(buffer, "Unexpected character %c", c);
         log_error(source->_current_line, buffer);
