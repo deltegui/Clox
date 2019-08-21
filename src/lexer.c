@@ -102,12 +102,14 @@ typedef struct {
     unsigned long _position;
     unsigned long _start_latest_lexeme;
     TokenQueue* _tokens; //THIS NEITHER
+    unsigned short _errors;
 } Source;
 
 Source create_source_from(char* raw_source) {
     Source new_source;
     new_source._current_line = 1;
     new_source._position = 0;
+    new_source._errors = 0;
     new_source._source = raw_source;
     new_source._tokens = create_queue();
     if(!new_source._tokens) {
@@ -337,11 +339,24 @@ void parse_token(Source* source) {
             advance_until(source, '\n');
             break; 
         }
+        if(is_current_equal(*source, '*')) {
+            int inside_comment = 1;
+            while(inside_comment) {
+                advance_until(source, '*');
+                advance(source);
+                if(is_current_equal(*source, '/')) {
+                    advance(source);
+                    inside_comment = 0;
+                }
+            }
+            break;
+        }
         push_token(source, TOKEN_SLASH); break;
     }
     case '"': {
         advance_until(source, '"');
         if(is_end(*source)) {
+            source->_errors = 1;
             log_error(source->_current_line, "Unterminated string");
             break;
         }
@@ -376,6 +391,7 @@ void parse_token(Source* source) {
             }
             break;
         }
+        source->_errors = 1;
         char buffer[24];
         sprintf(buffer, "Unexpected character %c", c);
         log_error(source->_current_line, buffer);
@@ -388,6 +404,11 @@ TokenQueue* tokenize_source(char* raw) {
     while(!is_end(source)) {
         source._start_latest_lexeme = source._position;
         parse_token(&source);
+    }
+    if(source._errors) {
+        free(source._source);
+        destroy_all_queue(source._tokens);
+        log_fatal(EX_DATAERR, "There where errors during lexing");
     }
     return source._tokens;
 }

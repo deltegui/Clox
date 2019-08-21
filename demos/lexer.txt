@@ -12,7 +12,10 @@ fun hola() {
         ...
     }
     if(a == 0) {
-
+/*
+    aqui tengo un comentario
+    de multiples lineas que hemos
+    añadido because for fun*/
     }
     if(a >= 0) {
 
@@ -28,6 +31,10 @@ fun hola() {
     }
     var pipo = 11;
 }
+/**
+ * Esto es un comentario tipo javadoc
+ * para poner a prueba el lexer.
+ */
 "This is my stirng
 multiline fuck
 "
