@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"golox/lexer"
+	"golox/parser"
 	"io/ioutil"
 	"log"
 	"os"
@@ -44,7 +45,17 @@ func runPrompt() {
 func run(source string) {
 	lexer := lexer.NewLexer(source)
 	tokens := lexer.ScanTokens()
+	fmt.Println("--LEXER-------------------------------------")
 	for _, t := range tokens {
 		fmt.Println(t.String())
 	}
+	fmt.Println("--PARSER------------------------------------")
+	par := parser.NewParser(tokens)
+	printer := parser.PrettyPrinter{}
+	syntaxTree, err := par.Parse()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	printer.Print(syntaxTree)
 }
