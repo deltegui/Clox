@@ -3,14 +3,14 @@ package parser
 import "golox/lexer"
 
 type Expr interface {
-	Accept(ExprVisitor)
+	Accept(ExprVisitor) interface{}
 }
 
 type ExprVisitor interface {
-	VisitBinary(BinaryExpr)
-	VisitGrouping(GroupingExpr)
-	VisitLiteral(LiteralExpr)
-	VisitUnary(UnaryExpr)
+	VisitBinary(BinaryExpr) interface{}
+	VisitGrouping(GroupingExpr) interface{}
+	VisitLiteral(LiteralExpr) interface{}
+	VisitUnary(UnaryExpr) interface{}
 }
 
 type BinaryExpr struct {
@@ -19,24 +19,24 @@ type BinaryExpr struct {
 	Right    Expr
 }
 
-func (binary BinaryExpr) Accept(visitor ExprVisitor) {
-	visitor.VisitBinary(binary)
+func (binary BinaryExpr) Accept(visitor ExprVisitor) interface{} {
+	return visitor.VisitBinary(binary)
 }
 
 type GroupingExpr struct {
 	Expression Expr
 }
 
-func (grouping GroupingExpr) Accept(visitor ExprVisitor) {
-	visitor.VisitGrouping(grouping)
+func (grouping GroupingExpr) Accept(visitor ExprVisitor) interface{} {
+	return visitor.VisitGrouping(grouping)
 }
 
 type LiteralExpr struct {
 	Value interface{}
 }
 
-func (literal LiteralExpr) Accept(visitor ExprVisitor) {
-	visitor.VisitLiteral(literal)
+func (literal LiteralExpr) Accept(visitor ExprVisitor) interface{} {
+	return visitor.VisitLiteral(literal)
 }
 
 type UnaryExpr struct {
@@ -44,6 +44,6 @@ type UnaryExpr struct {
 	Expression Expr
 }
 
-func (unary UnaryExpr) Accept(visitor ExprVisitor) {
-	visitor.VisitUnary(unary)
+func (unary UnaryExpr) Accept(visitor ExprVisitor) interface{} {
+	return visitor.VisitUnary(unary)
 }

@@ -66,7 +66,7 @@ const EOF TokenType = "EOF"
 type Token struct {
 	TokenType TokenType
 	Lexeme    string
-	Literal   string
+	Literal   interface{}
 	Line      int64
 }
 
@@ -78,7 +78,7 @@ func newToken(tokenType TokenType, lexeme string, line int64) Token {
 	return newTokenWithLiteral(tokenType, lexeme, line, "")
 }
 
-func newTokenWithLiteral(tokenType TokenType, lexeme string, line int64, literal string) Token {
+func newTokenWithLiteral(tokenType TokenType, lexeme string, line int64, literal interface{}) Token {
 	return Token{
 		TokenType: tokenType,
 		Lexeme:    lexeme,

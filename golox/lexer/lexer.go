@@ -3,6 +3,7 @@ package lexer
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"unicode"
 )
 
@@ -155,7 +156,11 @@ func (lex *Lexer) scanToken() {
 				}
 			}
 			value := lex.source.source[lex.source.lastPosition:lex.source.position]
-			lex.addTokenLiteral(TokenNumber, string(value))
+			number, err := strconv.ParseFloat(string(value), 64)
+			if err != nil {
+				panic("Expected number")
+			}
+			lex.addTokenLiteral(TokenNumber, number)
 			break
 		}
 		if unicode.IsLetter(char) || char == '_' {
@@ -179,6 +184,6 @@ func (lex *Lexer) addToken(tokenType TokenType) {
 	lex.tokens = append(lex.tokens, newToken(tokenType, string(lex.source.getLatestLexeme()), lex.source.getLine()))
 }
 
-func (lex *Lexer) addTokenLiteral(tokenType TokenType, literal string) {
+func (lex *Lexer) addTokenLiteral(tokenType TokenType, literal interface{}) {
 	lex.tokens = append(lex.tokens, newTokenWithLiteral(tokenType, string(lex.source.getLatestLexeme()), lex.source.getLine(), literal))
 }

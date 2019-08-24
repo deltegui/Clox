@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"golox/interpreter"
 	"golox/lexer"
 	"golox/parser"
 	"io/ioutil"
@@ -58,4 +59,7 @@ func run(source string) {
 		return
 	}
 	printer.Print(syntaxTree)
+	fmt.Println()
+	i := interpreter.Interpreter{}
+	i.Interpret(syntaxTree)
 }
