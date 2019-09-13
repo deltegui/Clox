@@ -11,6 +11,7 @@ type ExprVisitor interface {
 	VisitGrouping(GroupingExpr) interface{}
 	VisitLiteral(LiteralExpr) interface{}
 	VisitUnary(UnaryExpr) interface{}
+	VisitVar(VarExpr) interface{}
 }
 
 type BinaryExpr struct {
@@ -46,4 +47,12 @@ type UnaryExpr struct {
 
 func (unary UnaryExpr) Accept(visitor ExprVisitor) interface{} {
 	return visitor.VisitUnary(unary)
+}
+
+type VarExpr struct {
+	Name lexer.Token
+}
+
+func (varExpr VarExpr) Accept(visitor ExprVisitor) interface{} {
+	return visitor.VisitVar(varExpr)
 }

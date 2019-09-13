@@ -19,14 +19,14 @@ func (s *tokenStream) consume() lexer.Token {
 	return s.tokens[s.current-1]
 }
 
-func (s *tokenStream) checkCurrent(tokenType lexer.TokenType, panicMessage string) {
+func (s *tokenStream) checkCurrent(tokenType lexer.TokenType, panicMessage string) lexer.Token {
 	if s.isAtEnd() {
 		log.Panicf("%s at end", panicMessage)
 	}
 	if s.tokens[s.current].TokenType != tokenType {
 		log.Panicf("%s in line %d\n", panicMessage, s.tokens[s.current].Line)
 	}
-	s.avance()
+	return s.consume()
 }
 
 func (s *tokenStream) avance() {
@@ -77,9 +77,31 @@ func (p Parser) Parse() (program []Stmt, err error) {
 	}()
 	var statements []Stmt
 	for !p.tokens.isAtEnd() {
-		statements = append(statements, p.statement())
+		statements = append(statements, p.declaration())
 	}
 	return statements, nil
+}
+
+func (p Parser) declaration() Stmt {
+	if p.tokens.isCurrentEqual(lexer.TokenVar) {
+		return p.varDeclaration()
+	}
+	return p.statement()
+}
+
+func (p Parser) varDeclaration() Stmt {
+	p.tokens.avance()
+	tokenName := p.tokens.checkCurrent(lexer.TokenIdentifier, "Expect variable name")
+	var initializer Expr = nil
+	if p.tokens.isCurrentEqual(lexer.TokenEqual) {
+		p.tokens.avance()
+		initializer = p.expression()
+	}
+	p.tokens.checkCurrent(lexer.TokenSemicolon, "Expected ; after declaration")
+	return VarStmt{
+		Name:        tokenName,
+		Initializer: initializer,
+	}
 }
 
 func (p Parser) statement() Stmt {
@@ -213,6 +235,11 @@ func (p Parser) primary() Expr {
 		p.tokens.checkCurrent(lexer.TokenRightParen, "Expected ')'")
 		return GroupingExpr{
 			Expression: expr,
+		}
+	}
+	if p.tokens.isCurrentEqual(lexer.TokenIdentifier) {
+		return VarExpr{
+			Name: p.tokens.getCurrent(),
 		}
 	}
 	t := p.tokens.consume()

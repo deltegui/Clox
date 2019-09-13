@@ -133,3 +133,11 @@ func (interpreter Interpreter) VisitPrintStmt(print parser.PrintStmt) interface{
 	fmt.Println(result)
 	return nil
 }
+
+func (interpreter Interpreter) VisitVar(expr parser.VarExpr) interface{} {
+	return nil
+}
+
+func (interpreter Interpreter) VisitVarStmt(stmt parser.VarStmt) interface{} {
+	return nil
+}

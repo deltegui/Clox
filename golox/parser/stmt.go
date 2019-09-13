@@ -1,5 +1,7 @@
 package parser
 
+import "golox/lexer"
+
 type Stmt interface {
 	Accept(StmtVisitor) interface{}
 }
@@ -7,6 +9,7 @@ type Stmt interface {
 type StmtVisitor interface {
 	VisitExpressionStmt(ExprStmt) interface{}
 	VisitPrintStmt(PrintStmt) interface{}
+	VisitVarStmt(VarStmt) interface{}
 }
 
 type ExprStmt struct {
@@ -23,4 +26,13 @@ type PrintStmt struct {
 
 func (e PrintStmt) Accept(visitor StmtVisitor) interface{} {
 	return visitor.VisitPrintStmt(e)
+}
+
+type VarStmt struct {
+	Name        lexer.Token
+	Initializer Expr
+}
+
+func (varStmt VarStmt) Accept(visitor StmtVisitor) interface{} {
+	return visitor.VisitVarStmt(varStmt)
 }

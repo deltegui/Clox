@@ -52,3 +52,15 @@ func (printer PrettyPrinter) VisitPrintStmt(print PrintStmt) interface{} {
 	fmt.Print(") ")
 	return nil
 }
+
+func (printer PrettyPrinter) VisitVar(expr VarExpr) interface{} {
+	fmt.Printf(" (VAR REFERENCE WITH NAME %s )", expr.Name.Lexeme)
+	return nil
+}
+
+func (printer PrettyPrinter) VisitVarStmt(stmt VarStmt) interface{} {
+	fmt.Printf(" (VAR STATEMENT WITH NAME %s VALUE ", stmt.Name.Lexeme)
+	stmt.Initializer.Accept(printer)
+	fmt.Print(") ")
+	return nil
+}
