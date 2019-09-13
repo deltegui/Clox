@@ -60,6 +60,7 @@ func run(source string) {
 	}
 	printer.Print(syntaxTree)
 	fmt.Println()
+	fmt.Println("--INTERPRETER--------------------------------")
 	i := interpreter.Interpreter{}
 	i.Interpret(syntaxTree)
 }

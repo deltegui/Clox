@@ -20,6 +20,9 @@ func (s *tokenStream) consume() lexer.Token {
 }
 
 func (s *tokenStream) checkCurrent(tokenType lexer.TokenType, panicMessage string) {
+	if s.isAtEnd() {
+		log.Panicf("%s at end", panicMessage)
+	}
 	if s.tokens[s.current].TokenType != tokenType {
 		log.Panicf("%s in line %d\n", panicMessage, s.tokens[s.current].Line)
 	}
@@ -64,15 +67,43 @@ func NewParser(tokens []lexer.Token) Parser {
 }
 
 // Parse you code
-func (p Parser) Parse() (syntaxTree Expr, err error) {
+func (p Parser) Parse() (program []Stmt, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Println(r)
-			syntaxTree = nil
+			program = nil
 			err = fmt.Errorf("Parse Error")
 		}
 	}()
-	return p.expression(), nil
+	var statements []Stmt
+	for !p.tokens.isAtEnd() {
+		statements = append(statements, p.statement())
+	}
+	return statements, nil
+}
+
+func (p Parser) statement() Stmt {
+	if p.tokens.isCurrentEqual(lexer.TokenPrint) {
+		return p.printStmt()
+	}
+	return p.exprStmt()
+}
+
+func (p Parser) printStmt() Stmt {
+	p.tokens.avance() // consume print
+	expr := p.expression()
+	p.tokens.checkCurrent(lexer.TokenSemicolon, "Expected ; after value")
+	return PrintStmt{
+		Value: expr,
+	}
+}
+
+func (p Parser) exprStmt() Stmt {
+	expr := p.expression()
+	p.tokens.checkCurrent(lexer.TokenSemicolon, "Expected ; after expression")
+	return ExprStmt{
+		Expr: expr,
+	}
 }
 
 func (p Parser) expression() Expr {
@@ -84,11 +115,11 @@ func (p Parser) equality() Expr {
 	expr = p.comparison()
 	for p.tokens.isCurrentEqual(lexer.TokenBangEqual, lexer.TokenEqualEqual) {
 		operator := p.tokens.consume()
-		left := p.comparison()
+		right := p.comparison()
 		expr = BinaryExpr{
-			Right:    expr,
+			Right:    right,
 			Operator: operator,
-			Left:     left,
+			Left:     expr,
 		}
 	}
 	return expr
@@ -99,11 +130,11 @@ func (p Parser) comparison() Expr {
 	expr = p.addition()
 	for p.tokens.isCurrentEqual(lexer.TokenLess, lexer.TokenLessEqual, lexer.TokenGreater, lexer.TokenGreaterEqual) {
 		comparator := p.tokens.consume()
-		left := p.addition()
+		right := p.addition()
 		expr = BinaryExpr{
-			Right:    expr,
+			Right:    right,
 			Operator: comparator,
-			Left:     left,
+			Left:     expr,
 		}
 	}
 	return expr
@@ -114,11 +145,11 @@ func (p Parser) addition() Expr {
 	expr = p.multiplication()
 	for p.tokens.isCurrentEqual(lexer.TokenMinus, lexer.TokenPlus) {
 		addition := p.tokens.consume()
-		left := p.multiplication()
+		right := p.multiplication()
 		expr = BinaryExpr{
-			Right:    expr,
+			Right:    right,
 			Operator: addition,
-			Left:     left,
+			Left:     expr,
 		}
 	}
 	return expr
@@ -129,11 +160,11 @@ func (p Parser) multiplication() Expr {
 	expr = p.unary()
 	for p.tokens.isCurrentEqual(lexer.TokenStar, lexer.TokenSlash) {
 		multiply := p.tokens.consume()
-		left := p.unary()
+		right := p.unary()
 		expr = BinaryExpr{
-			Right:    expr,
+			Right:    right,
 			Operator: multiply,
-			Left:     left,
+			Left:     expr,
 		}
 	}
 	return expr
@@ -153,16 +184,19 @@ func (p Parser) unary() Expr {
 
 func (p Parser) primary() Expr {
 	if p.tokens.isCurrentEqual(lexer.TokenTrue) {
+		p.tokens.avance()
 		return LiteralExpr{
 			Value: true,
 		}
 	}
 	if p.tokens.isCurrentEqual(lexer.TokenFalse) {
+		p.tokens.avance()
 		return LiteralExpr{
 			Value: false,
 		}
 	}
 	if p.tokens.isCurrentEqual(lexer.TokenNil) {
+		p.tokens.avance()
 		return LiteralExpr{
 			Value: nil,
 		}

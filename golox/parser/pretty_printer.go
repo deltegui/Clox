@@ -4,8 +4,10 @@ import "fmt"
 
 type PrettyPrinter struct{}
 
-func (printer PrettyPrinter) Print(expr Expr) interface{} {
-	expr.Accept(printer)
+func (printer PrettyPrinter) Print(program []Stmt) interface{} {
+	for _, statement := range program {
+		statement.Accept(printer)
+	}
 	return nil
 }
 
@@ -33,6 +35,20 @@ func (printer PrettyPrinter) VisitLiteral(expr LiteralExpr) interface{} {
 func (printer PrettyPrinter) VisitUnary(expr UnaryExpr) interface{} {
 	fmt.Printf(" (%s ", expr.Operator.TokenType)
 	expr.Expression.Accept(printer)
+	fmt.Print(") ")
+	return nil
+}
+
+func (printer PrettyPrinter) VisitExpressionStmt(stmt ExprStmt) interface{} {
+	fmt.Printf(" (EPXR ")
+	stmt.Expr.Accept(printer)
+	fmt.Print(") ")
+	return nil
+}
+
+func (printer PrettyPrinter) VisitPrintStmt(print PrintStmt) interface{} {
+	fmt.Printf(" (PRINT ")
+	print.Value.Accept(printer)
 	fmt.Print(") ")
 	return nil
 }
