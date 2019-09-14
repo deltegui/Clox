@@ -71,3 +71,10 @@ func (printer PrettyPrinter) VisitAssign(expr AssignExpr) interface{} {
 	fmt.Print(") ")
 	return nil
 }
+
+func (printer PrettyPrinter) VisitBlockStmt(stmt BlockStmt) interface{} {
+	fmt.Print(" (BLOCK ")
+	printer.Print(stmt.Statements)
+	fmt.Print(") ")
+	return nil
+}

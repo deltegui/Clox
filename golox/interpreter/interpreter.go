@@ -157,3 +157,10 @@ func (interpreter Interpreter) VisitAssign(expr parser.AssignExpr) interface{} {
 	interpreter.env.assign(expr.Name, value)
 	return value
 }
+
+func (interpreter Interpreter) VisitBlockStmt(stmt parser.BlockStmt) interface{} {
+	interpreter.env = createEnvironmentFrom(interpreter.env)
+	interpreter.Interpret(stmt.Statements)
+	interpreter.env = *(interpreter.env.getEnclosing())
+	return nil
+}

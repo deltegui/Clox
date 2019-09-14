@@ -114,7 +114,22 @@ func (p Parser) statement() Stmt {
 	if p.tokens.isCurrentEqual(lexer.TokenPrint) {
 		return p.printStmt()
 	}
+	if p.tokens.isCurrentEqual(lexer.TokenLeftBrace) {
+		return BlockStmt{
+			Statements: p.block(),
+		}
+	}
 	return p.exprStmt()
+}
+
+func (p Parser) block() []Stmt {
+	var statements []Stmt
+	p.tokens.avance() //consume {
+	for !p.tokens.isAtEnd() && !p.tokens.isCurrentEqual(lexer.TokenRightBrace) {
+		statements = append(statements, p.declaration())
+	}
+	p.tokens.checkCurrent(lexer.TokenRightBrace, "Expected '}' after block")
+	return statements
 }
 
 func (p Parser) printStmt() Stmt {
