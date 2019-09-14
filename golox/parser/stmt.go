@@ -11,6 +11,7 @@ type StmtVisitor interface {
 	VisitPrintStmt(PrintStmt) interface{}
 	VisitVarStmt(VarStmt) interface{}
 	VisitBlockStmt(BlockStmt) interface{}
+	VisitIfStmt(IfStmt) interface{}
 }
 
 type ExprStmt struct {
@@ -44,4 +45,14 @@ type BlockStmt struct {
 
 func (b BlockStmt) Accept(visitor StmtVisitor) interface{} {
 	return visitor.VisitBlockStmt(b)
+}
+
+type IfStmt struct {
+	Expression Expr
+	Then       Stmt
+	Else       Stmt
+}
+
+func (i IfStmt) Accept(visitor StmtVisitor) interface{} {
+	return visitor.VisitIfStmt(i)
 }

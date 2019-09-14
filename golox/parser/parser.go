@@ -119,7 +119,28 @@ func (p Parser) statement() Stmt {
 			Statements: p.block(),
 		}
 	}
+	if p.tokens.isCurrentEqual(lexer.TokenIf) {
+		return p.ifStmt()
+	}
 	return p.exprStmt()
+}
+
+func (p Parser) ifStmt() Stmt {
+	p.tokens.avance() // consume if
+	p.tokens.checkCurrent(lexer.TokenLeftParen, "Expected '(' after if")
+	expr := p.expression()
+	p.tokens.checkCurrent(lexer.TokenRightParen, "Expected ')' after if expression")
+	thenStmt := p.statement()
+	var elseStmt Stmt = nil
+	if p.tokens.isCurrentEqual(lexer.TokenElse) {
+		p.tokens.avance() // consume else
+		elseStmt = p.statement()
+	}
+	return IfStmt{
+		Expression: expr,
+		Then:       thenStmt,
+		Else:       elseStmt,
+	}
 }
 
 func (p Parser) block() []Stmt {

@@ -164,3 +164,13 @@ func (interpreter Interpreter) VisitBlockStmt(stmt parser.BlockStmt) interface{}
 	interpreter.env = *(interpreter.env.getEnclosing())
 	return nil
 }
+
+func (interpreter Interpreter) VisitIfStmt(ifStmt parser.IfStmt) interface{} {
+	condition := interpreter.evaluate(ifStmt.Expression)
+	if interpreter.isTruthy(condition) {
+		ifStmt.Then.Accept(interpreter)
+	} else if ifStmt.Else != nil {
+		ifStmt.Else.Accept(interpreter)
+	}
+	return nil
+}

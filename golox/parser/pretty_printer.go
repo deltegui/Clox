@@ -78,3 +78,16 @@ func (printer PrettyPrinter) VisitBlockStmt(stmt BlockStmt) interface{} {
 	fmt.Print(") ")
 	return nil
 }
+
+func (printer PrettyPrinter) VisitIfStmt(ifStmt IfStmt) interface{} {
+	fmt.Print(" (IF EXPR ")
+	ifStmt.Expression.Accept(printer)
+	fmt.Print(" THEN STMT ")
+	ifStmt.Then.Accept(printer)
+	if ifStmt.Else != nil {
+		fmt.Print(" ELSE STMT ")
+		ifStmt.Else.Accept(printer)
+	}
+	fmt.Print(") ")
+	return nil
+}
