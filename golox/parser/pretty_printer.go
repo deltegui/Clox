@@ -64,3 +64,10 @@ func (printer PrettyPrinter) VisitVarStmt(stmt VarStmt) interface{} {
 	fmt.Print(") ")
 	return nil
 }
+
+func (printer PrettyPrinter) VisitAssign(expr AssignExpr) interface{} {
+	fmt.Printf(" (ASSIGMENT WITH L-VALUE %s AND R-VALUE ", expr.Name.Lexeme)
+	expr.Value.Accept(printer)
+	fmt.Print(") ")
+	return nil
+}

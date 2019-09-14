@@ -12,6 +12,16 @@ type ExprVisitor interface {
 	VisitLiteral(LiteralExpr) interface{}
 	VisitUnary(UnaryExpr) interface{}
 	VisitVar(VarExpr) interface{}
+	VisitAssign(AssignExpr) interface{}
+}
+
+type AssignExpr struct {
+	Name  lexer.Token
+	Value Expr
+}
+
+func (assign AssignExpr) Accept(visitor ExprVisitor) interface{} {
+	return visitor.VisitAssign(assign)
 }
 
 type BinaryExpr struct {

@@ -7,7 +7,15 @@ import (
 	"os"
 )
 
-type Interpreter struct{}
+type Interpreter struct {
+	env environment
+}
+
+func CreateInterpreter() Interpreter {
+	return Interpreter{
+		env: createEnvironment(),
+	}
+}
 
 func (interpreter Interpreter) Interpret(program []parser.Stmt) {
 	defer func() {
@@ -135,9 +143,17 @@ func (interpreter Interpreter) VisitPrintStmt(print parser.PrintStmt) interface{
 }
 
 func (interpreter Interpreter) VisitVar(expr parser.VarExpr) interface{} {
-	return nil
+	return interpreter.env.get(expr.Name)
 }
 
 func (interpreter Interpreter) VisitVarStmt(stmt parser.VarStmt) interface{} {
+	value := interpreter.evaluate(stmt.Initializer)
+	interpreter.env.define(stmt.Name.Lexeme, value)
 	return nil
+}
+
+func (interpreter Interpreter) VisitAssign(expr parser.AssignExpr) interface{} {
+	value := interpreter.evaluate(expr.Value)
+	interpreter.env.assign(expr.Name, value)
+	return value
 }
