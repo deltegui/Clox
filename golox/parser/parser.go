@@ -122,7 +122,71 @@ func (p Parser) statement() Stmt {
 	if p.tokens.isCurrentEqual(lexer.TokenIf) {
 		return p.ifStmt()
 	}
+    if p.tokens.isCurrentEqual(lexer.TokenWhile) {
+        return p.whileStmt()
+    }
+    if p.tokens.isCurrentEqual(lexer.TokenFor) {
+        return p.forStmt()
+    }
 	return p.exprStmt()
+}
+
+func (p Parser) forStmt() Stmt {
+    p.tokens.avance() // consume for
+	p.tokens.checkCurrent(lexer.TokenLeftParen, "Expected '(' after for")
+    var initializer Stmt
+    if p.tokens.isCurrentEqual(lexer.TokenSemicolon) {
+        initializer = nil
+        p.tokens.avance() // consume ;
+    } else if p.tokens.isCurrentEqual(lexer.TokenVar) {
+        initializer = p.varDeclaration()
+    } else {
+        initializer = p.exprStmt()
+    }
+    var condition Expr = nil
+    if !p.tokens.isCurrentEqual(lexer.TokenSemicolon) {
+        condition = p.expression()
+    }
+	p.tokens.checkCurrent(lexer.TokenSemicolon, "Expected ';' after for expression")
+    var increment Expr = nil
+    if !p.tokens.isCurrentEqual(lexer.TokenSemicolon) {
+        increment = p.expression()
+    }
+	p.tokens.checkCurrent(lexer.TokenRightParen, "Expected ')' after for clause")
+    body := p.statement()
+    if increment != nil {
+        body = BlockStmt{
+            Statements: []Stmt{
+                body,
+                ExprStmt{increment},
+            },
+        }
+    }
+    if condition == nil {
+        condition = LiteralExpr{true}
+    }
+    body = WhileStmt{condition, body}
+    if initializer != nil {
+        body = BlockStmt{
+            Statements: []Stmt{
+                initializer,
+                body,
+            },
+        }
+    }
+    return body
+}
+
+func (p Parser) whileStmt() Stmt {
+    p.tokens.avance() // consume while
+	p.tokens.checkCurrent(lexer.TokenLeftParen, "Expected '(' after while")
+    expr := p.expression()
+	p.tokens.checkCurrent(lexer.TokenRightParen, "Expected ')' after while expression")
+    stmt := p.statement()
+    return WhileStmt{
+        Expression: expr,
+        Statement: stmt,
+    }
 }
 
 func (p Parser) ifStmt() Stmt {

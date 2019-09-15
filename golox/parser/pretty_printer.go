@@ -99,3 +99,11 @@ func (printer PrettyPrinter) VisitLogic(expr LogicExpr) interface{} {
     fmt.Print(") ")
     return nil
 }
+func (printer PrettyPrinter) VisitWhileStmt(whileStmt WhileStmt) interface{} {
+	fmt.Print(" (WHILE EXPR ")
+    whileStmt.Expression.Accept(printer)
+	fmt.Print(" BLOCK STMT ")
+	whileStmt.Statement.Accept(printer)
+	fmt.Print(") ")
+	return nil
+}

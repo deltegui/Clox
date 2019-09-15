@@ -173,7 +173,7 @@ func (interpreter Interpreter) VisitIfStmt(ifStmt parser.IfStmt) interface{} {
 		ifStmt.Else.Accept(interpreter)
 	}
 	return nil
-}  
+}
 
 func (interpreter Interpreter) VisitLogic(expr parser.LogicExpr) interface{} {
     left := interpreter.evaluate(expr.Left)
@@ -187,4 +187,11 @@ func (interpreter Interpreter) VisitLogic(expr parser.LogicExpr) interface{} {
         }
     }
     return interpreter.evaluate(expr.Right)
+}
+
+func (interpreter Interpreter) VisitWhileStmt(whileStmt parser.WhileStmt) interface{} {
+    for interpreter.isTruthy(interpreter.evaluate(whileStmt.Expression)) {
+        whileStmt.Statement.Accept(interpreter)
+    }
+    return nil
 }

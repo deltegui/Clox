@@ -11,7 +11,8 @@ type StmtVisitor interface {
 	VisitPrintStmt(PrintStmt) interface{}
 	VisitVarStmt(VarStmt) interface{}
 	VisitBlockStmt(BlockStmt) interface{}
-	VisitIfStmt(IfStmt) interface{}
+    VisitIfStmt(IfStmt) interface{}
+    VisitWhileStmt(WhileStmt) interface{}
 }
 
 type ExprStmt struct {
@@ -55,4 +56,13 @@ type IfStmt struct {
 
 func (i IfStmt) Accept(visitor StmtVisitor) interface{} {
 	return visitor.VisitIfStmt(i)
+}
+
+type WhileStmt struct {
+    Expression Expr
+    Statement  Stmt
+}
+
+func (while WhileStmt) Accept(visitor StmtVisitor) interface{} {
+    return visitor.VisitWhileStmt(while)
 }
