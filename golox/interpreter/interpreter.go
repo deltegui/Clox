@@ -12,8 +12,10 @@ type Interpreter struct {
 }
 
 func CreateInterpreter() Interpreter {
+	globals := createEnvironment()
+	globals.define("time", TimeNative{})
 	return Interpreter{
-		env: createEnvironment(),
+		env: globals,
 	}
 }
 
@@ -176,22 +178,43 @@ func (interpreter Interpreter) VisitIfStmt(ifStmt parser.IfStmt) interface{} {
 }
 
 func (interpreter Interpreter) VisitLogic(expr parser.LogicExpr) interface{} {
-    left := interpreter.evaluate(expr.Left)
-    if expr.Operator.TokenType == lexer.TokenOr {
-        if interpreter.isTruthy(left) {
-            return left
-        }
-    } else {
-        if !interpreter.isTruthy(left) {
-            return left
-        }
-    }
-    return interpreter.evaluate(expr.Right)
+	left := interpreter.evaluate(expr.Left)
+	if expr.Operator.TokenType == lexer.TokenOr {
+		if interpreter.isTruthy(left) {
+			return left
+		}
+	} else {
+		if !interpreter.isTruthy(left) {
+			return left
+		}
+	}
+	return interpreter.evaluate(expr.Right)
 }
 
 func (interpreter Interpreter) VisitWhileStmt(whileStmt parser.WhileStmt) interface{} {
-    for interpreter.isTruthy(interpreter.evaluate(whileStmt.Expression)) {
-        whileStmt.Statement.Accept(interpreter)
-    }
-    return nil
+	for interpreter.isTruthy(interpreter.evaluate(whileStmt.Expression)) {
+		whileStmt.Statement.Accept(interpreter)
+	}
+	return nil
+}
+
+func (interpreter Interpreter) VisitCall(call parser.CallExpr) interface{} {
+	callee := interpreter.evaluate(call.Callee)
+	var arguments []interface{}
+	for _, arg := range call.Arguments {
+		arguments = append(arguments, interpreter.evaluate(arg))
+	}
+	function, isCallable := callee.(LoxCallable)
+	if !isCallable {
+		panic("Can only call functions and classes")
+	}
+	if len(arguments) != function.Arity() {
+		panic("Argument number does not match with funtion arity")
+	}
+	return function.Call(interpreter, arguments)
+}
+
+func (interpreter Interpreter) VisitFunStmt(funStmt parser.FunStmt) interface{} {
+	interpreter.env.define(funStmt.Name.Lexeme, LoxFunction{funStmt})
+	return nil
 }

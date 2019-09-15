@@ -1,0 +1,11 @@
+fun sayHello(to) {
+    if(to) {
+        print "Hello " + to;
+    } else {
+        print "Hello World";
+    }
+}
+
+sayHello("me");
+sayHello("Diego");
+sayHello(nil);

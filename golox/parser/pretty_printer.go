@@ -93,17 +93,42 @@ func (printer PrettyPrinter) VisitIfStmt(ifStmt IfStmt) interface{} {
 }
 
 func (printer PrettyPrinter) VisitLogic(expr LogicExpr) interface{} {
-    fmt.Printf(" (LOGIC OP %s ", expr.Operator)
-    expr.Left.Accept(printer)
-    expr.Right.Accept(printer)
-    fmt.Print(") ")
-    return nil
+	fmt.Printf(" (LOGIC OP %s ", expr.Operator)
+	expr.Left.Accept(printer)
+	expr.Right.Accept(printer)
+	fmt.Print(") ")
+	return nil
 }
+
 func (printer PrettyPrinter) VisitWhileStmt(whileStmt WhileStmt) interface{} {
 	fmt.Print(" (WHILE EXPR ")
-    whileStmt.Expression.Accept(printer)
+	whileStmt.Expression.Accept(printer)
 	fmt.Print(" BLOCK STMT ")
 	whileStmt.Statement.Accept(printer)
+	fmt.Print(") ")
+	return nil
+}
+
+func (printer PrettyPrinter) VisitCall(call CallExpr) interface{} {
+	fmt.Print(" (FUNCTIONCALL EXPR ")
+	call.Callee.Accept(printer)
+	fmt.Print(" ARGS ")
+	for _, arg := range call.Arguments {
+		arg.Accept(printer)
+	}
+	fmt.Print(") ")
+	return nil
+}
+
+func (printer PrettyPrinter) VisitFunStmt(funStmt FunStmt) interface{} {
+	fmt.Printf(" (FUNCTION DEFINITION NAME %s, ARGS [", funStmt.Name.Lexeme)
+	for _, arg := range funStmt.ArgumentNames {
+		fmt.Print("%s ", arg.Lexeme)
+	}
+	fmt.Print("] BODY (")
+	for _, stmt := range funStmt.Body {
+		stmt.Accept(printer)
+	}
 	fmt.Print(") ")
 	return nil
 }

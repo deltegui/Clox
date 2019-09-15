@@ -11,8 +11,9 @@ type StmtVisitor interface {
 	VisitPrintStmt(PrintStmt) interface{}
 	VisitVarStmt(VarStmt) interface{}
 	VisitBlockStmt(BlockStmt) interface{}
-    VisitIfStmt(IfStmt) interface{}
-    VisitWhileStmt(WhileStmt) interface{}
+	VisitIfStmt(IfStmt) interface{}
+	VisitWhileStmt(WhileStmt) interface{}
+	VisitFunStmt(FunStmt) interface{}
 }
 
 type ExprStmt struct {
@@ -59,10 +60,20 @@ func (i IfStmt) Accept(visitor StmtVisitor) interface{} {
 }
 
 type WhileStmt struct {
-    Expression Expr
-    Statement  Stmt
+	Expression Expr
+	Statement  Stmt
 }
 
 func (while WhileStmt) Accept(visitor StmtVisitor) interface{} {
-    return visitor.VisitWhileStmt(while)
+	return visitor.VisitWhileStmt(while)
+}
+
+type FunStmt struct {
+	Name          lexer.Token
+	ArgumentNames []lexer.Token
+	Body          []Stmt
+}
+
+func (fun FunStmt) Accept(visitor StmtVisitor) interface{} {
+	return visitor.VisitFunStmt(fun)
 }

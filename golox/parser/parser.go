@@ -87,10 +87,37 @@ func (p Parser) Parse() (program []Stmt, err error) {
 }
 
 func (p Parser) declaration() Stmt {
+	if p.tokens.isCurrentEqual(lexer.TokenFun) {
+		return p.funDeclaration()
+	}
 	if p.tokens.isCurrentEqual(lexer.TokenVar) {
 		return p.varDeclaration()
 	}
 	return p.statement()
+}
+
+func (p Parser) funDeclaration() Stmt {
+	p.tokens.avance() // consume fun
+	funName := p.tokens.checkCurrent(lexer.TokenIdentifier, "Expected function name")
+	p.tokens.checkCurrent(lexer.TokenLeftParen, "Expected '(' after function name")
+	var argumentList []lexer.Token
+	if !p.tokens.isCurrentEqual(lexer.TokenRightParen) {
+		for {
+			param := p.tokens.checkCurrent(lexer.TokenIdentifier, "Expected identifier inside function declaration argument list")
+			argumentList = append(argumentList, param)
+			if !p.tokens.isCurrentEqual(lexer.TokenComma) {
+				break
+			}
+			p.tokens.avance() // consume comma
+		}
+	}
+	p.tokens.checkCurrent(lexer.TokenRightParen, "Expected ')' after function name")
+	body := p.block()
+	return FunStmt{
+		Name:          funName,
+		ArgumentNames: argumentList,
+		Body:          body,
+	}
 }
 
 func (p Parser) varDeclaration() Stmt {
@@ -122,71 +149,71 @@ func (p Parser) statement() Stmt {
 	if p.tokens.isCurrentEqual(lexer.TokenIf) {
 		return p.ifStmt()
 	}
-    if p.tokens.isCurrentEqual(lexer.TokenWhile) {
-        return p.whileStmt()
-    }
-    if p.tokens.isCurrentEqual(lexer.TokenFor) {
-        return p.forStmt()
-    }
+	if p.tokens.isCurrentEqual(lexer.TokenWhile) {
+		return p.whileStmt()
+	}
+	if p.tokens.isCurrentEqual(lexer.TokenFor) {
+		return p.forStmt()
+	}
 	return p.exprStmt()
 }
 
 func (p Parser) forStmt() Stmt {
-    p.tokens.avance() // consume for
+	p.tokens.avance() // consume for
 	p.tokens.checkCurrent(lexer.TokenLeftParen, "Expected '(' after for")
-    var initializer Stmt
-    if p.tokens.isCurrentEqual(lexer.TokenSemicolon) {
-        initializer = nil
-        p.tokens.avance() // consume ;
-    } else if p.tokens.isCurrentEqual(lexer.TokenVar) {
-        initializer = p.varDeclaration()
-    } else {
-        initializer = p.exprStmt()
-    }
-    var condition Expr = nil
-    if !p.tokens.isCurrentEqual(lexer.TokenSemicolon) {
-        condition = p.expression()
-    }
+	var initializer Stmt
+	if p.tokens.isCurrentEqual(lexer.TokenSemicolon) {
+		initializer = nil
+		p.tokens.avance() // consume ;
+	} else if p.tokens.isCurrentEqual(lexer.TokenVar) {
+		initializer = p.varDeclaration()
+	} else {
+		initializer = p.exprStmt()
+	}
+	var condition Expr = nil
+	if !p.tokens.isCurrentEqual(lexer.TokenSemicolon) {
+		condition = p.expression()
+	}
 	p.tokens.checkCurrent(lexer.TokenSemicolon, "Expected ';' after for expression")
-    var increment Expr = nil
-    if !p.tokens.isCurrentEqual(lexer.TokenSemicolon) {
-        increment = p.expression()
-    }
+	var increment Expr = nil
+	if !p.tokens.isCurrentEqual(lexer.TokenSemicolon) {
+		increment = p.expression()
+	}
 	p.tokens.checkCurrent(lexer.TokenRightParen, "Expected ')' after for clause")
-    body := p.statement()
-    if increment != nil {
-        body = BlockStmt{
-            Statements: []Stmt{
-                body,
-                ExprStmt{increment},
-            },
-        }
-    }
-    if condition == nil {
-        condition = LiteralExpr{true}
-    }
-    body = WhileStmt{condition, body}
-    if initializer != nil {
-        body = BlockStmt{
-            Statements: []Stmt{
-                initializer,
-                body,
-            },
-        }
-    }
-    return body
+	body := p.statement()
+	if increment != nil {
+		body = BlockStmt{
+			Statements: []Stmt{
+				body,
+				ExprStmt{increment},
+			},
+		}
+	}
+	if condition == nil {
+		condition = LiteralExpr{true}
+	}
+	body = WhileStmt{condition, body}
+	if initializer != nil {
+		body = BlockStmt{
+			Statements: []Stmt{
+				initializer,
+				body,
+			},
+		}
+	}
+	return body
 }
 
 func (p Parser) whileStmt() Stmt {
-    p.tokens.avance() // consume while
+	p.tokens.avance() // consume while
 	p.tokens.checkCurrent(lexer.TokenLeftParen, "Expected '(' after while")
-    expr := p.expression()
+	expr := p.expression()
 	p.tokens.checkCurrent(lexer.TokenRightParen, "Expected ')' after while expression")
-    stmt := p.statement()
-    return WhileStmt{
-        Expression: expr,
-        Statement: stmt,
-    }
+	stmt := p.statement()
+	return WhileStmt{
+		Expression: expr,
+		Statement:  stmt,
+	}
 }
 
 func (p Parser) ifStmt() Stmt {
@@ -240,7 +267,7 @@ func (p Parser) expression() Expr {
 
 func (p Parser) assigment() Expr {
 	expr := p.logicOr()
-    if p.tokens.isCurrentEqual(lexer.TokenEqual) {
+	if p.tokens.isCurrentEqual(lexer.TokenEqual) {
 		p.tokens.avance()
 		value := p.assigment()
 		if varExpr, ok := expr.(VarExpr); ok {
@@ -255,29 +282,29 @@ func (p Parser) assigment() Expr {
 }
 
 func (p Parser) logicOr() Expr {
-    expr := p.logicAnd()
-    for p.tokens.isCurrentEqual(lexer.TokenOr) {
-        expr = p.logicExpr(expr)
-    }
-    return expr
+	expr := p.logicAnd()
+	for p.tokens.isCurrentEqual(lexer.TokenOr) {
+		expr = p.logicExpr(expr)
+	}
+	return expr
 }
 
 func (p Parser) logicAnd() Expr {
-    expr := p.equality()
-    for p.tokens.isCurrentEqual(lexer.TokenAnd) {
-        expr = p.logicExpr(expr)
-    }
-    return expr
+	expr := p.equality()
+	for p.tokens.isCurrentEqual(lexer.TokenAnd) {
+		expr = p.logicExpr(expr)
+	}
+	return expr
 }
 
 func (p Parser) logicExpr(left Expr) Expr {
-    operator := p.tokens.consume()
-    right := p.expression()
-    return LogicExpr{
-        Left: left,
-        Operator: operator,
-        Right: right,
-    }
+	operator := p.tokens.consume()
+	right := p.expression()
+	return LogicExpr{
+		Left:     left,
+		Operator: operator,
+		Right:    right,
+	}
 }
 
 func (p Parser) equality() Expr {
@@ -349,7 +376,45 @@ func (p Parser) unary() Expr {
 			Expression: primary,
 		}
 	}
-	return p.primary()
+	return p.call()
+}
+
+func (p Parser) call() Expr {
+	calleeExpr := p.primary()
+	for {
+		if p.tokens.isCurrentEqual(lexer.TokenLeftParen) {
+			calleeExpr = p.finishCall(calleeExpr)
+		} else {
+			break
+		}
+	}
+	return calleeExpr
+}
+
+const ArgumentCountLimit int = 255
+
+func (p Parser) finishCall(callee Expr) Expr {
+	leftParen := p.tokens.getCurrent()
+	p.tokens.avance() // consume left paren
+	var arguments []Expr
+	if !p.tokens.isCurrentEqual(lexer.TokenRightParen) {
+		for {
+			if len(arguments) >= ArgumentCountLimit {
+				panic("Funciton call exceeds the argument limit!")
+			}
+			arguments = append(arguments, p.expression())
+			if !p.tokens.isCurrentEqual(lexer.TokenComma) {
+				break
+			}
+			p.tokens.avance() // consume comma
+		}
+	}
+	p.tokens.checkCurrent(lexer.TokenRightParen, "Expected ')' after call arguments")
+	return CallExpr{
+		Callee:    callee,
+		OpenParen: leftParen,
+		Arguments: arguments,
+	}
 }
 
 func (p Parser) primary() Expr {
