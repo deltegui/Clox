@@ -207,13 +207,13 @@ func (p Parser) logicAnd() Expr {
 }
 
 func (p Parser) logicExpr(left Expr) Expr {
-        operator := p.tokens.consume()
-        right := p.expression()
-        return LogicExpr{
-            Left: left,
-            Operator: operator,
-            Right: right,
-        }
+    operator := p.tokens.consume()
+    right := p.expression()
+    return LogicExpr{
+        Left: left,
+        Operator: operator,
+        Right: right,
+    }
 }
 
 func (p Parser) equality() Expr {

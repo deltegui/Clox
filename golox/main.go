@@ -33,34 +33,38 @@ func runFile(filePath string) {
 
 func runPrompt() {
 	in := bufio.NewReader(os.Stdin)
+    interpreter := interpreter.CreateInterpreter()
 	for {
 		fmt.Printf("(lox) ~> ")
 		line, err := in.ReadString('\n')
 		if err != nil {
 			log.Fatalf("Error while reading line: %s\n", err)
 		}
-		run(line)
+		runWithInterpreter(line, interpreter)
 	}
 }
 
 func run(source string) {
+    runWithInterpreter(source, interpreter.CreateInterpreter())
+}
+
+func runWithInterpreter(source string, interpreter interpreter.Interpreter) {
 	lexer := lexer.NewLexer(source)
 	tokens := lexer.ScanTokens()
-	fmt.Println("--LEXER-------------------------------------")
+	/*fmt.Println("--LEXER-------------------------------------")
 	for _, t := range tokens {
 		fmt.Println(t.String())
 	}
-	fmt.Println("--PARSER------------------------------------")
+	fmt.Println("--PARSER------------------------------------")*/
 	par := parser.NewParser(tokens)
-	printer := parser.PrettyPrinter{}
+	//printer := parser.PrettyPrinter{}
 	syntaxTree, err := par.Parse()
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	printer.Print(syntaxTree)
-	fmt.Println()
-	fmt.Println("--INTERPRETER--------------------------------")
-	i := interpreter.CreateInterpreter()
-	i.Interpret(syntaxTree)
+	//printer.Print(syntaxTree)
+	//fmt.Println()
+	//fmt.Println("--INTERPRETER--------------------------------")
+	interpreter.Interpret(syntaxTree)
 }
