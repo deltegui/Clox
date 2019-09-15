@@ -13,6 +13,7 @@ type ExprVisitor interface {
 	VisitUnary(UnaryExpr) interface{}
 	VisitVar(VarExpr) interface{}
 	VisitAssign(AssignExpr) interface{}
+    VisitLogic(LogicExpr) interface{}
 }
 
 type AssignExpr struct {
@@ -65,4 +66,14 @@ type VarExpr struct {
 
 func (varExpr VarExpr) Accept(visitor ExprVisitor) interface{} {
 	return visitor.VisitVar(varExpr)
+}
+  
+type LogicExpr struct {
+	Left     Expr
+	Operator lexer.Token
+	Right    Expr
+}
+
+func (logic LogicExpr) Accept(visitor ExprVisitor) interface{} {
+	return visitor.VisitLogic(logic)
 }

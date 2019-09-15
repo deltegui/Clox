@@ -173,4 +173,18 @@ func (interpreter Interpreter) VisitIfStmt(ifStmt parser.IfStmt) interface{} {
 		ifStmt.Else.Accept(interpreter)
 	}
 	return nil
+}  
+
+func (interpreter Interpreter) VisitLogic(expr parser.LogicExpr) interface{} {
+    left := interpreter.evaluate(expr.Left)
+    if expr.Operator.TokenType == lexer.TokenOr {
+        if interpreter.isTruthy(left) {
+            return left
+        }
+    } else {
+        if !interpreter.isTruthy(left) {
+            return left
+        }
+    }
+    return interpreter.evaluate(expr.Right)
 }

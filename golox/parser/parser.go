@@ -175,8 +175,8 @@ func (p Parser) expression() Expr {
 }
 
 func (p Parser) assigment() Expr {
-	expr := p.equality()
-	if p.tokens.getCurrent().TokenType == lexer.TokenEqual {
+	expr := p.logicOr()
+    if p.tokens.isCurrentEqual(lexer.TokenEqual) {
 		p.tokens.avance()
 		value := p.assigment()
 		if varExpr, ok := expr.(VarExpr); ok {
@@ -188,6 +188,32 @@ func (p Parser) assigment() Expr {
 		log.Panicf("Expected assigment in line %d", p.tokens.getCurrentLine())
 	}
 	return expr
+}
+
+func (p Parser) logicOr() Expr {
+    expr := p.logicAnd()
+    for p.tokens.isCurrentEqual(lexer.TokenOr) {
+        expr = p.logicExpr(expr)
+    }
+    return expr
+}
+
+func (p Parser) logicAnd() Expr {
+    expr := p.equality()
+    for p.tokens.isCurrentEqual(lexer.TokenAnd) {
+        expr = p.logicExpr(expr)
+    }
+    return expr
+}
+
+func (p Parser) logicExpr(left Expr) Expr {
+        operator := p.tokens.consume()
+        right := p.expression()
+        return LogicExpr{
+            Left: left,
+            Operator: operator,
+            Right: right,
+        }
 }
 
 func (p Parser) equality() Expr {

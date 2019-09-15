@@ -91,3 +91,11 @@ func (printer PrettyPrinter) VisitIfStmt(ifStmt IfStmt) interface{} {
 	fmt.Print(") ")
 	return nil
 }
+
+func (printer PrettyPrinter) VisitLogic(expr LogicExpr) interface{} {
+    fmt.Printf(" (LOGIC OP %s ", expr.Operator)
+    expr.Left.Accept(printer)
+    expr.Right.Accept(printer)
+    fmt.Print(") ")
+    return nil
+}
