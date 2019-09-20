@@ -22,6 +22,7 @@ func (t TimeNative) Arity() int {
 
 type LoxFunction struct {
 	declaration parser.FunStmt
+	closure     environment
 }
 
 func (fun LoxFunction) Call(interpreter Interpreter, args []interface{}) (r interface{}) {
@@ -35,7 +36,7 @@ func (fun LoxFunction) Call(interpreter Interpreter, args []interface{}) (r inte
 			}
 		}
 	}()
-	funEnv := createEnvironmentFrom(interpreter.env)
+	funEnv := createEnvironmentFrom(fun.closure)
 	for i := 0; i < fun.Arity(); i++ {
 		funEnv.define(fun.declaration.ArgumentNames[i].Lexeme, args[i])
 	}

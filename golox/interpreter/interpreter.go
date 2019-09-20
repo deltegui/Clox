@@ -219,7 +219,10 @@ func (interpreter Interpreter) VisitCall(call parser.CallExpr) interface{} {
 }
 
 func (interpreter Interpreter) VisitFunStmt(funStmt parser.FunStmt) interface{} {
-	interpreter.env.define(funStmt.Name.Lexeme, LoxFunction{funStmt})
+	interpreter.env.define(funStmt.Name.Lexeme, LoxFunction{
+		declaration: funStmt,
+		closure:     interpreter.env,
+	})
 	return nil
 }
 
