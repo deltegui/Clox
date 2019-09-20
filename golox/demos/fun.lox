@@ -9,3 +9,9 @@ fun sayHello(to) {
 sayHello("me");
 sayHello("Diego");
 sayHello(nil);
+
+fun sum(a, b) { 
+    return a + b;
+}
+print "SUMA: ";
+print sum(1,1);

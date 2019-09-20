@@ -132,3 +132,12 @@ func (printer PrettyPrinter) VisitFunStmt(funStmt FunStmt) interface{} {
 	fmt.Print(") ")
 	return nil
 }
+
+func (printer PrettyPrinter) VisitReturnStmt(returnStmt ReturnStmt) interface{} {
+	fmt.Print(" (RETURN EXPR: ")
+	if returnStmt.Expression != nil {
+		returnStmt.Expression.Accept(printer)
+	}
+	fmt.Print(") ")
+	return nil
+}

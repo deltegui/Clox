@@ -22,8 +22,12 @@ func CreateInterpreter() Interpreter {
 func (interpreter Interpreter) Interpret(program []parser.Stmt) {
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println(r)
-			os.Exit(1)
+			if payload, ok := r.(ReturnPayload); ok {
+				panic(payload)
+			} else {
+				fmt.Println(r)
+				os.Exit(1)
+			}
 		}
 	}()
 	for _, statement := range program {
@@ -217,4 +221,12 @@ func (interpreter Interpreter) VisitCall(call parser.CallExpr) interface{} {
 func (interpreter Interpreter) VisitFunStmt(funStmt parser.FunStmt) interface{} {
 	interpreter.env.define(funStmt.Name.Lexeme, LoxFunction{funStmt})
 	return nil
+}
+
+func (interpreter Interpreter) VisitReturnStmt(returnStmt parser.ReturnStmt) interface{} {
+	var expr interface{} = nil
+	if returnStmt.Expression != nil {
+		expr = interpreter.evaluate(returnStmt.Expression)
+	}
+	panic(ReturnPayload{expr})
 }

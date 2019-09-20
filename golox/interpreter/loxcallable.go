@@ -24,7 +24,17 @@ type LoxFunction struct {
 	declaration parser.FunStmt
 }
 
-func (fun LoxFunction) Call(interpreter Interpreter, args []interface{}) interface{} {
+func (fun LoxFunction) Call(interpreter Interpreter, args []interface{}) (r interface{}) {
+	defer func() {
+		if err := recover(); err != nil {
+			if payload, ok := err.(ReturnPayload); ok {
+				r = payload.Payload
+				return
+			} else {
+				panic(err)
+			}
+		}
+	}()
 	funEnv := createEnvironmentFrom(interpreter.env)
 	for i := 0; i < fun.Arity(); i++ {
 		funEnv.define(fun.declaration.ArgumentNames[i].Lexeme, args[i])
@@ -36,4 +46,12 @@ func (fun LoxFunction) Call(interpreter Interpreter, args []interface{}) interfa
 
 func (fun LoxFunction) Arity() int {
 	return len(fun.declaration.ArgumentNames)
+}
+
+type ReturnPayload struct {
+	Payload interface{}
+}
+
+func (pay ReturnPayload) Error() string {
+	return ""
 }

@@ -155,9 +155,25 @@ func (p Parser) statement() Stmt {
 	if p.tokens.isCurrentEqual(lexer.TokenFor) {
 		return p.forStmt()
 	}
+	if p.tokens.isCurrentEqual(lexer.TokenReturn) {
+		return p.returnStmt()
+	}
 	return p.exprStmt()
 }
 
+func (p Parser) returnStmt() Stmt {
+	returnToken := p.tokens.getCurrent()
+	p.tokens.avance() //consume return
+	var expression Expr = nil
+	if !p.tokens.isCurrentEqual(lexer.TokenSemicolon) {
+		expression = p.expression()
+	}
+	p.tokens.checkCurrent(lexer.TokenSemicolon, "Expected ';' at end of return statement")
+	return ReturnStmt{
+		Keyword:    returnToken,
+		Expression: expression,
+	}
+}
 func (p Parser) forStmt() Stmt {
 	p.tokens.avance() // consume for
 	p.tokens.checkCurrent(lexer.TokenLeftParen, "Expected '(' after for")
