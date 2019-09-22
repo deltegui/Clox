@@ -6,6 +6,5 @@
   scanner.c
   values.c
   vm.c
-  Compiling...
   Generating Code...
   clox.vcxproj -> E:\code\lox-c\clox\Debug\clox.exe

@@ -18,14 +18,17 @@ void free_vm() {
 
 }
 
-InterpretResult interpret_chunk(Chunk* chunk) {
-	vm.chunk = chunk;
-	vm.pc = vm.chunk->code;
-	return run();
-}
-
 InterpretResult interpret(const char* source) {
-	compile(source);
+	Chunk chunk;
+	init_chunk(&chunk);
+	if (!compile(source, &chunk)) {
+		free_chunk(&chunk);
+		return INTERPRET_COMPILE_ERROR;
+	}
+	vm.chunk = &chunk;
+	vm.pc = vm.chunk->code;
+	InterpretResult result = run();
+	free_chunk(&chunk);
 	return INTERPRET_OK;
 }
 
