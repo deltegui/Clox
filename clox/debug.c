@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include "debug.h"
 
+int simple_instruction(const char* name, int position);
+int constant_instruction(Chunk* chunk, int position);
+
 void disassemble_chunk(Chunk* chunk, const char* name) {
 	printf("== %s chunk ==\n", name);
 	for (int i = 0; i < chunk->size;) {
@@ -14,6 +17,16 @@ int disassemble_instruction(Chunk* chunk, int position) {
 	switch (opcode) {
 	case OP_RETURN:
 		return simple_instruction("OP_RETURN", position);
+	case OP_NEGATE:
+		return simple_instruction("OP_NEGATE", position);
+	case OP_ADD:
+		return simple_instruction("OP_ADD", position);
+	case OP_SUBSTRACT:
+		return simple_instruction("OP_SUBTRACT", position);
+	case OP_MULTIPLY:
+		return simple_instruction("OP_MULTIPLY", position);
+	case OP_DIVIDE:
+		return simple_instruction("OP_DIVIDE", position);
 	case OP_CONSTANT:
 		return constant_instruction(chunk, position);
 	default: {

@@ -1,4 +1,11 @@
-﻿  debug.c
-E:\code\lox-c\clox\debug.c(16,28): warning C4013:  'simple_instruction' undefined; assuming extern returning int
-E:\code\lox-c\clox\debug.c(18,30): warning C4013:  'constant_instruction' undefined; assuming extern returning int
+﻿  chunk.c
+  compiler.c
+  debug.c
+  main.c
+  memory.c
+  scanner.c
+  values.c
+  vm.c
+  Compiling...
+  Generating Code...
   clox.vcxproj -> E:\code\lox-c\clox\Debug\clox.exe
