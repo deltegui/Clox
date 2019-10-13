@@ -1,0 +1,8 @@
+.vs
+Debug
+x64
+*.sln
+clox.vcxproj*
+*.out
+.DS_Store
+build
