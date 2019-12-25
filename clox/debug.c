@@ -27,6 +27,20 @@ int disassemble_instruction(Chunk* chunk, int position) {
 		return simple_instruction("OP_MULTIPLY", position);
 	case OP_DIVIDE:
 		return simple_instruction("OP_DIVIDE", position);
+	case OP_TRUE:
+		return simple_instruction("OP_TRUE", position);
+	case OP_FALSE:
+		return simple_instruction("OP_FALSE", position);
+	case OP_NIL:
+		return simple_instruction("OP_NIL", position);
+	case OP_NOT:
+		return simple_instruction("OP_NOT", position);
+	case OP_EQUAL:
+		return simple_instruction("OP_EQUAL", position);
+	case OP_LESS:
+		return simple_instruction("OP_LESS", position);
+	case OP_GREATER:
+		return simple_instruction("OP_GREATER", position);
 	case OP_CONSTANT:
 		return constant_instruction(chunk, position);
 	default: {
