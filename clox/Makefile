@@ -5,3 +5,6 @@ build-folder:
 
 build: build-folder
 	gcc ./*.c && mv ./a.out ./build/clox
+
+clean:
+	rm -rf ./build

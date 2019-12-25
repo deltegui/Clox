@@ -1,5 +1,5 @@
-#ifndef clox_value_h 
-#define clox_value_h 
+#ifndef clox_value_h
+#define clox_value_h
 
 #include "common.h"
 
@@ -16,4 +16,4 @@ void write_valuearray(ValueArray* array, Value value);
 void free_valuearray(ValueArray* array);
 void print_value(Value value);
 
-#endif 
+#endif

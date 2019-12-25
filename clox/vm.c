@@ -29,7 +29,7 @@ InterpretResult interpret(const char* source) {
 	vm.pc = vm.chunk->code;
 	InterpretResult result = run();
 	free_chunk(&chunk);
-	return INTERPRET_OK;
+	return result;
 }
 
 static InterpretResult run() {
@@ -72,7 +72,7 @@ static InterpretResult run() {
 		case OP_MULTIPLY: BINARY_OP(*); break;
 		case OP_DIVIDE: BINARY_OP(/); break;
 		}
-	} 
+	}
 #undef BINARY_OP
 #undef READ_BYTE
 #undef READ_CONSTANT

@@ -1,8 +1,7 @@
-#include <stdio.h>    
-#include <string.h>   
-
-#include "common.h"   
-#include "scanner.h"  
+#include <stdio.h>
+#include <string.h>
+#include "common.h"
+#include "scanner.h"
 
 typedef struct {
 	const char* start;
@@ -56,6 +55,11 @@ static bool match(char expected) {
 	return true;
 }
 
+static bool match_next(char expected) {
+	if(is_at_end()) return false;
+	return *(scanner.current+1) == expected;
+}
+
 static void skip_whitespace() {
 #define CONSUME_UNTIL(character) while(peek() != character && !is_at_end()) advance()
 	for (;;) {
@@ -69,7 +73,7 @@ static void skip_whitespace() {
 			advance();
 			break;
 		case '/':
-			if (peek_next() == '/') {
+			if(match_next('/')) {
 				CONSUME_UNTIL('\n');
 			}
 			else {

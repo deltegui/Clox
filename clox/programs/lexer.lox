@@ -1,0 +1,44 @@
+// this is a comment
+(( )){} // grouping stuff
+!*+-/=<> <= == // operators
+
+fun hola() {
+    var a = 2 / 33;
+    if(a != 0) {
+        ...
+    }
+    //Esto es mi puto comentario
+    if(!a) {
+        ...
+    }
+    if(a == 0) {
+/*
+    aqui tengo un comentario
+    de multiples lineas que hemos
+    añadido because for fun*/
+    }
+    if(a >= 0) {
+
+    }
+    if(a > 0) {
+
+    }
+    if(a <= 0) {
+
+    }
+    if(a < 0) {
+
+    }
+    var pipo = 11;
+}
+/**
+ * Esto es un comentario tipo javadoc
+ * para poner a prueba el lexer.
+ */
+"This is my stirng
+multiline fuck
+"
+123
+123.231231
+123123.
+.123123

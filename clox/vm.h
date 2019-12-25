@@ -1,5 +1,5 @@
-#ifndef clox_vm_h 
-#define clox_vm_h 
+#ifndef clox_vm_h
+#define clox_vm_h
 
 #include "chunk.h"
 #include "values.h"
@@ -23,4 +23,4 @@ void init_vm();
 void free_vm();
 InterpretResult interpret(const char* source);
 
-#endif  
+#endif

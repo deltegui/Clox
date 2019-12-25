@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "chunk.h"
 #include "vm.h"
 #include "sysexits.h"
 
@@ -19,7 +18,8 @@ int main(int argc, char** argv) {
 	}
 	else {
 		fprintf(stderr, "Wrong number of parameters: %d\n", argc);
-		fprintf(stderr, "Usage: clox [path]\n");
+		fprintf(stderr, "Usage: clox [path] to run a file or clox to run REPL\n");
+		free_vm();
 		exit(EX_USAGE);
 	}
 	free_vm();
