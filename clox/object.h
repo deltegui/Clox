@@ -22,6 +22,7 @@ struct sObjString {
   Obj obj;
   int length;
   char* chars;
+  uint32_t hash;
 };
 
 static inline bool is_obj_type(Value value, ObjType type) {

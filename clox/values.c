@@ -44,12 +44,7 @@ bool values_equal(Value left, Value right) {
 	case VAL_BOOL: return AS_BOOL(left) == AS_BOOL(right);
 	case VAL_NUMBER: return AS_NUMBER(left) == AS_NUMBER(right);
 	case VAL_NIL: return true;
-	case VAL_OBJ: {
-		ObjString* left_str = AS_STRING(left);
-		ObjString* right_str = AS_STRING(right);
-		return left_str->length == right_str->length &&
-			memcmp(left_str->chars, right_str->chars, 0);
-	}
+	case VAL_OBJ: return AS_OBJ(left) == AS_OBJ(right);
 	}
 }
 
