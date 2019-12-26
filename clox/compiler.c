@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "compiler.h"
 #include "scanner.h"
+#include "object.h"
 
 #ifdef DEBUG_PRINT_CODE
 #include "debug.h"
@@ -41,6 +42,7 @@ static void binary();
 static void unary();
 static void number();
 static void literal();
+static void string();
 
 ParseRule rules[] = {
   { grouping, NULL,    PREC_NONE },       // TOKEN_LEFT_PAREN
@@ -63,7 +65,7 @@ ParseRule rules[] = {
   { NULL,     binary,  PREC_COMPARISON }, // TOKEN_LESS
   { NULL,     binary,  PREC_COMPARISON }, // TOKEN_LESS_EQUAL
   { NULL,     NULL,    PREC_NONE },       // TOKEN_IDENTIFIER
-  { NULL,     NULL,    PREC_NONE },       // TOKEN_STRING
+  { string,   NULL,    PREC_NONE },       // TOKEN_STRING
   { number,   NULL,    PREC_NONE },       // TOKEN_NUMBER
   { NULL,     NULL,    PREC_NONE },       // TOKEN_AND
   { NULL,     NULL,    PREC_NONE },       // TOKEN_CLASS
@@ -253,6 +255,10 @@ static void literal() {
 	default:
 		return; // Unreachable
 	}
+}
+
+static void string() {
+	emit_constant(OBJ_VALUE(copy_string(parser.previous.start + 1, parser.previous.length - 2)));
 }
 
 bool compile(const char* source, Chunk* chunk) {

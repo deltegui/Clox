@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <string.h>
+#include "object.h"
 #include "values.h"
 #include "memory.h"
 
@@ -23,7 +25,7 @@ void write_valuearray(ValueArray* array, Value value) {
 }
 
 void free_valuearray(ValueArray* array) {
-	FREE_ARRAY(array->values, Value, array->capacity);
+	FREE_ARRAY(Value, array->values, array->capacity);
 	init_valuearray(array);
 }
 
@@ -32,5 +34,25 @@ void print_value(Value value) {
 	case VAL_BOOL: printf("%s", AS_BOOL(value) ? "true" : "false"); break;
 	case VAL_NUMBER: printf("%g", AS_NUMBER(value)); break;
 	case VAL_NIL: printf("nil"); break;
+	case VAL_OBJ: print_object(value); break;
 	}
+}
+
+bool values_equal(Value left, Value right) {
+	if(left.type != right.type) return false;
+	switch(left.type) {
+	case VAL_BOOL: return AS_BOOL(left) == AS_BOOL(right);
+	case VAL_NUMBER: return AS_NUMBER(left) == AS_NUMBER(right);
+	case VAL_NIL: return true;
+	case VAL_OBJ: {
+		ObjString* left_str = AS_STRING(left);
+		ObjString* right_str = AS_STRING(right);
+		return left_str->length == right_str->length &&
+			memcmp(left_str->chars, right_str->chars, 0);
+	}
+	}
+}
+
+bool is_falsy(Value value) {
+	return value.type == VAL_NIL || (IS_BOOL(value) && AS_BOOL(value) == false);
 }

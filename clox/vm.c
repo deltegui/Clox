@@ -1,8 +1,11 @@
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
 #include "vm.h"
+#include "object.h"
 #include "debug.h"
 #include "compiler.h"
+#include "memory.h"
 
 VM vm;
 
@@ -12,15 +15,17 @@ static Value stack_pop();
 static void stack_reset();
 static Value stack_peek(int distance);
 static void runtime_error(const char* format, ...);
-static bool is_falsy(Value value);
-static bool is_equal(Value left, Value right);
+static void free_objects();
+static void free_object(Obj* object);
+static void concatenate_str();
 
 void init_vm() {
 	stack_reset();
+	vm.objects = NULL;
 }
 
 void free_vm() {
-
+	free_objects();
 }
 
 InterpretResult interpret(const char* source) {
@@ -86,7 +91,7 @@ static InterpretResult run() {
 		case OP_EQUAL: {
 			Value right = stack_pop();
 			Value left = stack_pop();
-			stack_push(BOOL_VALUE(is_equal(left, right)));
+			stack_push(BOOL_VALUE(values_equal(left, right)));
 			break;
 		}
 		case OP_NEGATE: {
@@ -97,7 +102,19 @@ static InterpretResult run() {
 			stack_push( NUMBER_VALUE( - AS_NUMBER( stack_pop() ) ) );
 			break;
 		}
-		case OP_ADD: BINARY_OP(NUMBER_VALUE, +); break;
+		case OP_ADD: {
+			if(IS_NUMBER(stack_peek(0)) && IS_NUMBER(stack_peek(1))) {
+				double b = AS_NUMBER(stack_pop());
+				double a = AS_NUMBER(stack_pop());
+				stack_push(NUMBER_VALUE(a + b));
+			} else if(IS_STRING(stack_peek(0)) && IS_STRING(stack_peek(1))) {
+				concatenate_str();
+			} else {
+				runtime_error("Operand must be two numbers or two strings");
+				return INTERPRET_RUNTIME_ERROR;
+			}
+			break;
+		}
 		case OP_SUBSTRACT: BINARY_OP(NUMBER_VALUE, -); break;
 		case OP_MULTIPLY: BINARY_OP(NUMBER_VALUE, *); break;
 		case OP_DIVIDE: BINARY_OP(NUMBER_VALUE, /); break;
@@ -106,19 +123,6 @@ static InterpretResult run() {
 #undef BINARY_OP
 #undef READ_BYTE
 #undef READ_CONSTANT
-}
-
-static bool is_falsy(Value value) {
-	return value.type == VAL_NIL || (IS_BOOL(value) && AS_BOOL(value) == false);
-}
-
-static bool is_equal(Value left, Value right) {
-	if(left.type != right.type) return false;
-	switch(left.type) {
-	case VAL_BOOL: return AS_BOOL(left) == AS_BOOL(right);
-	case VAL_NUMBER: return AS_NUMBER(left) == AS_NUMBER(right);
-	case VAL_NIL: return true;
-	}
 }
 
 static void stack_reset() {
@@ -151,4 +155,38 @@ static void runtime_error(const char* format, ...) {
   fprintf(stderr, "[line %d] in script\n", line);
 
   stack_reset();
+}
+
+static void concatenate_str() {
+	ObjString* b = AS_STRING(stack_pop());
+	ObjString* a = AS_STRING(stack_pop());
+
+	int length = b->length + a->length;
+	char* chars = ALLOCATE(char, length + 1);
+	memcpy(chars, a->chars, a->length);
+	memcpy(chars + a->length, b->chars, b->length);
+	chars[length] = '\0';
+
+	ObjString* result = take_string(chars, length);
+	stack_push(OBJ_VALUE(result));
+}
+
+static void free_objects() {
+	Obj* current = vm.objects;
+	while(current != NULL) {
+		Obj* next = current->next;
+		free_object(current);
+		current = next;
+	}
+}
+
+static void free_object(Obj* object) {
+	switch (object->type) {
+    case OBJ_STRING: {
+      ObjString* string = (ObjString*)object;
+      FREE_ARRAY(char, string->chars, string->length + 1);
+      FREE(ObjString, object);
+      break;
+    }
+  }
 }
