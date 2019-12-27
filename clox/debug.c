@@ -2,7 +2,7 @@
 #include "debug.h"
 
 int simple_instruction(const char* name, int position);
-int constant_instruction(Chunk* chunk, int position);
+int constant_instruction(const char* op_name, Chunk* chunk, int position);
 
 void disassemble_chunk(Chunk* chunk, const char* name) {
 	printf("== %s chunk ==\n", name);
@@ -41,8 +41,18 @@ int disassemble_instruction(Chunk* chunk, int position) {
 		return simple_instruction("OP_LESS", position);
 	case OP_GREATER:
 		return simple_instruction("OP_GREATER", position);
+	case OP_PRINT:
+		return simple_instruction("OP_PRINT", position);
+	case OP_POP:
+		return simple_instruction("OP_POP", position);
+	case OP_DEFINE_GLOBAL:
+		return constant_instruction("OP_DEFINE_GLOBAL", chunk, position);
+	case OP_GET_GLOBAL:
+		return constant_instruction("OP_GET_GLOBAL", chunk, position);
+	case OP_SET_GLOBAL:
+		return constant_instruction("OP_SET_GLOBAL", chunk, position);
 	case OP_CONSTANT:
-		return constant_instruction(chunk, position);
+		return constant_instruction("OP_CONSTANT", chunk, position);
 	default: {
 		printf("ERROR: UNDEFINED OPCODE: %d\n", opcode);
 		return position + 1;
@@ -55,9 +65,9 @@ int simple_instruction(const char* name, int position) {
 	return position + 1;
 }
 
-int constant_instruction(Chunk* chunk, int position) {
+int constant_instruction(const char* op_name, Chunk* chunk, int position) {
 	uint8_t constant_addr = chunk->code[position + 1];
-	printf("OP_CONSTANT %04d '", constant_addr);
+	printf("%s %04d '", op_name, constant_addr);
 	print_value(chunk->constants.values[constant_addr]);
 	printf("'\n");
 	return position + 2;

@@ -23,9 +23,11 @@ void init_vm() {
 	stack_reset();
 	vm.objects = NULL;
 	init_table(&vm.strings);
+	init_table(&vm.globals);
 }
 
 void free_vm() {
+	free_table(&vm.globals);
 	free_table(&vm.strings);
 	free_objects();
 }
@@ -47,6 +49,7 @@ InterpretResult interpret(const char* source) {
 static InterpretResult run() {
 #define READ_BYTE() (*vm.pc++)
 #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
+#define READ_STRING() AS_STRING(READ_CONSTANT())
 #define BINARY_OP(value_type, op) \
 	do {\
 		if(!IS_NUMBER(stack_peek(0)) || !IS_NUMBER(stack_peek(1))) { \
@@ -73,10 +76,8 @@ static InterpretResult run() {
 
 		uint8_t instruction;
 		switch (instruction = READ_BYTE()) {
-		case OP_RETURN:
-			print_value(stack_pop());
-			printf("\n");
-			return INTERPRET_OK;
+		case OP_RETURN: return INTERPRET_OK;
+		case OP_POP: stack_pop(); break;
 		case OP_CONSTANT: {
 			Value constant = READ_CONSTANT();
 			stack_push(constant);
@@ -120,11 +121,43 @@ static InterpretResult run() {
 		case OP_SUBSTRACT: BINARY_OP(NUMBER_VALUE, -); break;
 		case OP_MULTIPLY: BINARY_OP(NUMBER_VALUE, *); break;
 		case OP_DIVIDE: BINARY_OP(NUMBER_VALUE, /); break;
+		case OP_PRINT: {
+			print_value(stack_pop());
+			printf("\n");
+			break;
+		}
+		case OP_DEFINE_GLOBAL: {
+			ObjString* name = READ_STRING();
+			table_set(&vm.globals, name, stack_peek(0));
+			stack_pop(); // Ensure garbage collector can access the value if is triggered here.
+			break;
+		}
+		case OP_GET_GLOBAL: {
+			ObjString* name = READ_STRING();
+			Value value;
+			if(!table_get(&vm.globals, name, &value)) {
+				runtime_error("Undefined global: %s", name->chars);
+				return INTERPRET_RUNTIME_ERROR;
+			}
+			stack_push(value);
+			break;
+		}
+		case OP_SET_GLOBAL: {
+			ObjString* name = READ_STRING();
+			if(table_set(&vm.globals, name, stack_peek(0))) {
+				table_delete(&vm.globals, name);
+				runtime_error("Undefined global: %s", name->chars);
+				return INTERPRET_RUNTIME_ERROR;
+			}
+			break;
+		}
 		}
 	}
 #undef BINARY_OP
 #undef READ_BYTE
 #undef READ_CONSTANT
+#undef READ_STRING
+#undef BINARY_OP
 }
 
 static void stack_reset() {

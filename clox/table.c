@@ -1,4 +1,3 @@
-#include <stdio.h> //delete
 #include <string.h>
 #include "table.h"
 #include "memory.h"

@@ -14,6 +14,7 @@ typedef struct {
 	Value* stack_top;
 	struct sObj* objects;
 	Table strings; // Interning
+	Table globals; // Global variables
 } VM;
 
 typedef enum {

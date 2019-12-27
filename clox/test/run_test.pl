@@ -1,7 +1,6 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
-use File::Slurp;
 use Term::ANSIColor;
 
 sub read_files {
@@ -20,6 +19,12 @@ sub read_files_as_hash {
 	delete $hash{"."};
 	delete $hash{".."};
 	return %hash;
+}
+
+sub read_text {
+	open my $fh, '<', $_[0] or die "Can't open file $!";
+	my $file_content = do { local $/; <$fh> };
+	return $file_content
 }
 
 sub clean_entry {
@@ -53,7 +58,7 @@ while(my ($key, $value) = each(%tests)) {
 			$result = '';
 		}
 		$result = clean_entry($result);
-		my $expected = clean_entry(read_file($value));
+		my $expected = clean_entry(read_text($value));
 		if($expected eq $result) {
 			print color('bold green');
 			print "OK\n";
