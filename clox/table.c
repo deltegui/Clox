@@ -1,3 +1,4 @@
+#include <stdio.h> //delete
 #include <string.h>
 #include "table.h"
 #include "memory.h"
@@ -24,8 +25,7 @@ bool table_set(Table* table, ObjString* key, Value value) {
         int capacity = GROW_CAPACITY(table->capacity);
         adjust_capacity(table, capacity);
     }
-
-    Entry* entry = find_entry(table->entries, table->count, key);
+    Entry* entry = find_entry(table->entries, table->capacity, key);
     bool is_new = entry->label == NULL;
     if(is_new && IS_NIL(entry->value)) table->count++;
     entry->label = key;

@@ -8,3 +8,7 @@ build: build-folder
 
 clean:
 	rm -rf ./build
+
+.PHONY: test
+test:
+	./test/run_test.pl

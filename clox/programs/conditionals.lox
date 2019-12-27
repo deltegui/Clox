@@ -1,8 +1,0 @@
-var a = false;
-if(a) print "No"; else print "Yes";
-var a = true;
-if(a) {
-    print "No";
-} else {
-    print "Yes";
-}
