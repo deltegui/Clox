@@ -50,6 +50,7 @@ static InterpretResult run() {
 #define READ_BYTE() (*vm.pc++)
 #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
 #define READ_STRING() AS_STRING(READ_CONSTANT())
+#define READ_SHORT() (vm.pc += 2, (uint16_t)((vm.pc[-2] << 8) | vm.pc[-1]))
 #define BINARY_OP(value_type, op) \
 	do {\
 		if(!IS_NUMBER(stack_peek(0)) || !IS_NUMBER(stack_peek(1))) { \
@@ -161,9 +162,22 @@ static InterpretResult run() {
 			vm.stack[stack_index] = stack_peek(0);
 			break;
 		}
+		case OP_JUMP_IF_FALSE: {
+			uint16_t offset = READ_SHORT();
+			if(is_falsy(stack_peek(0))) {
+				vm.pc += offset;
+			}
+			break;
+		}
+		case OP_JUMP: {
+			uint16_t offset = READ_SHORT();
+			vm.pc += offset;
+			break;
+		}
 		}
 	}
 #undef BINARY_OP
+#undef READ_SHORT
 #undef READ_BYTE
 #undef READ_CONSTANT
 #undef READ_STRING

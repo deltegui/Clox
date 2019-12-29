@@ -56,7 +56,11 @@ static void statement();
 static void block_stmt();
 static void print_stmt();
 static void expr_stmt();
+static void if_stmt();
 static void declaration();
+
+static int emit_jump(uint8_t op_code);
+static void patch_jump(int jump_position);
 
 static void grouping(bool can_assign);
 static void binary(bool can_assign);
@@ -361,9 +365,47 @@ static void statement() {
 		begin_scope();
 		block_stmt();
 		end_scope();
+	} else if(match(TOKEN_IF)) {
+		if_stmt();
 	} else {
 		expr_stmt();
 	}
+}
+
+static void if_stmt() {
+	consume(TOKEN_LEFT_PAREN, "Expected ( after if");
+	expression();
+	consume(TOKEN_RIGHT_PAREN, "Expected ) after condition in if");
+	int then_jump_pos = emit_jump(OP_JUMP_IF_FALSE);
+	emit_byte(OP_POP);
+	statement();
+	int else_jump_pos = emit_jump(OP_JUMP);
+	patch_jump(then_jump_pos);
+	emit_byte(OP_POP);
+	if(match(TOKEN_ELSE)) {
+		statement();
+	}
+	patch_jump(else_jump_pos);
+}
+
+static int emit_jump(uint8_t op_code) {
+	emit_byte(op_code);
+	emit_byte(0xff);
+	emit_byte(0xff);
+	return current_chunk()->size - 2;
+}
+
+static void patch_jump(int jump_position) {
+	Chunk* chunk = current_chunk();
+	int jump = chunk->size - jump_position - 2;
+
+	if(jump > UINT16_MAX) {
+		error("Too much code to jump over");
+	}
+
+	// Write a clean 16 bit integer as jump argument
+	chunk->code[jump_position] = (jump >> 8) & 0xff;
+	chunk->code[jump_position + 1] = jump & 0xff;
 }
 
 static void begin_scope() {
