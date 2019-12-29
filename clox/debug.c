@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include "debug.h"
 
-int simple_instruction(const char* name, int position);
-int constant_instruction(const char* op_name, Chunk* chunk, int position);
+static int simple_instruction(const char* name, int position);
+static int constant_instruction(const char* op_name, Chunk* chunk, int position);
 
 void disassemble_chunk(Chunk* chunk, const char* name) {
 	printf("== %s chunk ==\n", name);
@@ -51,6 +51,10 @@ int disassemble_instruction(Chunk* chunk, int position) {
 		return constant_instruction("OP_GET_GLOBAL", chunk, position);
 	case OP_SET_GLOBAL:
 		return constant_instruction("OP_SET_GLOBAL", chunk, position);
+	case OP_GET_LOCAL:
+		return constant_instruction("OP_GET_LOCAL", chunk, position);
+	case OP_SET_LOCAL:
+		return constant_instruction("OP_SET_LOCAL", chunk, position);
 	case OP_CONSTANT:
 		return constant_instruction("OP_CONSTANT", chunk, position);
 	default: {
@@ -60,15 +64,21 @@ int disassemble_instruction(Chunk* chunk, int position) {
 	}
 }
 
-int simple_instruction(const char* name, int position) {
+static int simple_instruction(const char* name, int position) {
 	printf("%s\n", name);
 	return position + 1;
 }
 
-int constant_instruction(const char* op_name, Chunk* chunk, int position) {
+static int constant_instruction(const char* op_name, Chunk* chunk, int position) {
 	uint8_t constant_addr = chunk->code[position + 1];
 	printf("%s %04d '", op_name, constant_addr);
 	print_value(chunk->constants.values[constant_addr]);
 	printf("'\n");
 	return position + 2;
+}
+
+static int byte_instruction(const char* name, Chunk* chunk, int position) {
+	uint8_t slot = chunk->code[position + 1];
+  	printf("%-16s %4d\n", name, slot);
+  	return position + 2;
 }

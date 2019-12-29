@@ -122,4 +122,3 @@ ObjString* table_find_string(Table* table, const char* chars, int length, uint32
         index = (index + 1) % table->capacity;
     }
 }
-

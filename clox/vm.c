@@ -151,6 +151,16 @@ static InterpretResult run() {
 			}
 			break;
 		}
+		case OP_GET_LOCAL: {
+			uint8_t stack_index = READ_BYTE();
+			stack_push(vm.stack[stack_index]);
+			break;
+		}
+		case OP_SET_LOCAL: {
+			uint8_t stack_index = READ_BYTE();
+			vm.stack[stack_index] = stack_peek(0);
+			break;
+		}
 		}
 	}
 #undef BINARY_OP
