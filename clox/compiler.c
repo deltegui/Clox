@@ -69,6 +69,8 @@ static void number(bool can_assign);
 static void literal(bool can_assign);
 static void string(bool can_assign);
 static void variable(bool can_assign);
+static void and_(bool can_assign);
+static void or_(bool can_assign);
 static void named_variable(Token name, bool can_assign);
 
 static bool match(TokenType type);
@@ -111,7 +113,7 @@ ParseRule rules[] = {
   { variable, NULL,    PREC_NONE },       // TOKEN_IDENTIFIER
   { string,   NULL,    PREC_NONE },       // TOKEN_STRING
   { number,   NULL,    PREC_NONE },       // TOKEN_NUMBER
-  { NULL,     NULL,    PREC_NONE },       // TOKEN_AND
+  { NULL,     and_,    PREC_AND },       // TOKEN_AND
   { NULL,     NULL,    PREC_NONE },       // TOKEN_CLASS
   { NULL,     NULL,    PREC_NONE },       // TOKEN_ELSE
   { literal,  NULL,    PREC_NONE },       // TOKEN_FALSE
@@ -119,7 +121,7 @@ ParseRule rules[] = {
   { NULL,     NULL,    PREC_NONE },       // TOKEN_FUN
   { NULL,     NULL,    PREC_NONE },       // TOKEN_IF
   { literal,  NULL,    PREC_NONE },       // TOKEN_NIL
-  { NULL,     NULL,    PREC_NONE },       // TOKEN_OR
+  { NULL,     or_,    PREC_OR },       // TOKEN_OR
   { NULL,     NULL,    PREC_NONE },       // TOKEN_PRINT
   { NULL,     NULL,    PREC_NONE },       // TOKEN_RETURN
   { NULL,     NULL,    PREC_NONE },       // TOKEN_SUPER
@@ -499,6 +501,26 @@ static void literal(bool can_assign) {
 	default:
 		return; // Unreachable
 	}
+}
+
+static void and_(bool can_assign) {
+	// Logical AND is implemented using JUMP.
+	// IS NOT THE WAY TO DO IT. JUST FOR LEARNING PURPOSES.
+	int jump = emit_jump(OP_JUMP_IF_FALSE);
+	emit_byte(OP_POP);
+	parse_precedence(PREC_AND);
+	patch_jump(jump);
+}
+
+static void or_(bool can_assign) {
+	// Logical OR is implemented using JUMP.
+	// IS NOT THE WAY TO DO IT. JUST FOR LEARNING PURPOSES.
+	int else_jump = emit_jump(OP_JUMP_IF_FALSE);
+	int jump = emit_jump(OP_JUMP);
+	patch_jump(else_jump);
+	emit_byte(OP_POP);
+	parse_precedence(PREC_AND);
+	patch_jump(jump);
 }
 
 static void string(bool can_assign) {
