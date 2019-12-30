@@ -57,10 +57,12 @@ static void block_stmt();
 static void print_stmt();
 static void expr_stmt();
 static void if_stmt();
+static void while_stmt();
 static void declaration();
 
 static int emit_jump(uint8_t op_code);
 static void patch_jump(int jump_position);
+static void emit_loop(int back_pos);
 
 static void grouping(bool can_assign);
 static void binary(bool can_assign);
@@ -369,9 +371,34 @@ static void statement() {
 		end_scope();
 	} else if(match(TOKEN_IF)) {
 		if_stmt();
+	} else if(match(TOKEN_WHILE)) {
+		while_stmt();
 	} else {
 		expr_stmt();
 	}
+}
+
+static void while_stmt() {
+	int loop_start = current_chunk()->size;
+	consume(TOKEN_LEFT_PAREN, "Expected ( after while");
+	expression();
+	consume(TOKEN_RIGHT_PAREN, "Expected ) after while");
+	int exit_pos = emit_jump(OP_JUMP_IF_FALSE);
+	emit_byte(OP_POP);
+	statement();
+	emit_loop(loop_start);
+	patch_jump(exit_pos);
+	emit_byte(OP_POP);
+}
+
+static void emit_loop(int back_pos) {
+	emit_byte(OP_LOOP);
+	int offset = current_chunk()->size - back_pos + 2;
+	if(offset > UINT16_MAX) {
+		error("Body to large in loop");
+	}
+	emit_byte((offset >> 8) & 0xff);
+	emit_byte(offset & 0xff);
 }
 
 static void if_stmt() {

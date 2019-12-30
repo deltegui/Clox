@@ -4,7 +4,10 @@
 static int simple_instruction(const char* name, int position);
 static int constant_instruction(const char* op_name, Chunk* chunk, int position);
 static int byte_instruction(const char* name, Chunk* chunk, int position);
-static int jump_instruction(const char* name, Chunk* chunk, int position);
+static int jump_instruction(const char* name, Chunk* chunk, int position, int direction);
+
+#define DIR_FORWARD 1
+#define DIR_BACKWARDS -1
 
 void disassemble_chunk(Chunk* chunk, const char* name) {
 	printf("== %s chunk ==\n", name);
@@ -60,9 +63,11 @@ int disassemble_instruction(Chunk* chunk, int position) {
 	case OP_CONSTANT:
 		return constant_instruction("OP_CONSTANT", chunk, position);
 	case OP_JUMP:
-		return jump_instruction("OP_JUMP", chunk, position);
+		return jump_instruction("OP_JUMP", chunk, position, DIR_FORWARD);
 	case OP_JUMP_IF_FALSE:
-		return jump_instruction("OP_JUMP_IF_FALSE", chunk, position);
+		return jump_instruction("OP_JUMP_IF_FALSE", chunk, position, DIR_FORWARD);
+	case OP_LOOP:
+		return jump_instruction("OP_LOOP", chunk, position, DIR_BACKWARDS);
 	default: {
 		printf("ERROR: UNDEFINED OPCODE: %d\n", opcode);
 		return position + 1;
@@ -89,8 +94,11 @@ static int byte_instruction(const char* name, Chunk* chunk, int position) {
   	return position + 2;
 }
 
-static int jump_instruction(const char* name, Chunk* chunk, int position) {
+static int jump_instruction(const char* name, Chunk* chunk, int position, int direction) {
 	uint16_t jump = (uint16_t)((chunk->code[position + 1] << 8) | chunk->code[position + 2]);
-	printf("%-16s %4d -> %d\n", name, jump, position + 3 + jump);
+	printf("%-16s %4d -> %d\n", name, jump, position + 3 + direction * jump);
 	return position + 3;
 }
+
+#undef DIR_BACKWARDS
+#undef DIR_FORWARD
