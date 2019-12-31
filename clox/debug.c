@@ -13,7 +13,7 @@ char* tokens_names[] = {
 	"TOKEN_LEFT_PAREN", "TOKEN_RIGHT_PAREN",
 	"TOKEN_LEFT_BRACE", "TOKEN_RIGHT_BRACE",
 	"TOKEN_COMMA", "TOKEN_DOT", "TOKEN_MINUS", "TOKEN_PLUS",
-	"TOKEN_SEMICOLON", "TOKEN_SLASH", "TOKEN_STAR",
+	"TOKEN_SEMICOLON", "TOKEN_SLASH", "TOKEN_STAR", "TOKEN_PERCENT",
 
 	// One or two character tokens.
 	"TOKEN_BANG", "TOKEN_BANG_EQUAL",
@@ -62,6 +62,8 @@ int disassemble_instruction(Chunk* chunk, int position) {
 		return simple_instruction("OP_MULTIPLY", position);
 	case OP_DIVIDE:
 		return simple_instruction("OP_DIVIDE", position);
+	case OP_MODULE:
+		return simple_instruction("OP_MODULE", position);
 	case OP_TRUE:
 		return simple_instruction("OP_TRUE", position);
 	case OP_FALSE:

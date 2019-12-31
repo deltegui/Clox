@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#include <math.h>
 #include "vm.h"
 #include "object.h"
 #include "debug.h"
@@ -122,6 +123,16 @@ static InterpretResult run() {
 		case OP_SUBSTRACT: BINARY_OP(NUMBER_VALUE, -); break;
 		case OP_MULTIPLY: BINARY_OP(NUMBER_VALUE, *); break;
 		case OP_DIVIDE: BINARY_OP(NUMBER_VALUE, /); break;
+		case OP_MODULE: {
+			if(!IS_NUMBER(stack_peek(0)) || !IS_NUMBER(stack_peek(1))) {
+				runtime_error("Operand must be a number");
+				return INTERPRET_RUNTIME_ERROR;
+			}
+			double b = AS_NUMBER(stack_pop());
+			double a = AS_NUMBER(stack_pop());
+			stack_push(NUMBER_VALUE(fmod(a, b)));
+			break;
+		}
 		case OP_PRINT: {
 			print_value(stack_pop());
 			printf("\n");

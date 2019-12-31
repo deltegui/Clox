@@ -19,9 +19,6 @@ while(a < 11) {
 	if(a == 5) {
 		break;
 	}
-	if(a == 6) {
-		break;
-	}
 	print a;
 	a = a + 1;
 }

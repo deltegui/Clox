@@ -114,6 +114,7 @@ ParseRule rules[] = {
   { NULL,     NULL,    PREC_NONE },       // TOKEN_SEMICOLON
   { NULL,     binary,  PREC_FACTOR },     // TOKEN_SLASH
   { NULL,     binary,  PREC_FACTOR },     // TOKEN_STAR
+  { NULL,     binary,  PREC_FACTOR },     // TOKEN_PERCENT
   { unary,    NULL,    PREC_NONE },       // TOKEN_BANG
   { NULL,     binary,  PREC_EQUALITY },   // TOKEN_BANG_EQUAL
   { NULL,     NULL,    PREC_NONE },       // TOKEN_EQUAL
@@ -621,6 +622,7 @@ static void binary(bool can_assign) {
 	case TOKEN_GREATER_EQUAL: emit_bytes(OP_LESS, OP_NOT); break;
 	case TOKEN_LESS: emit_byte(OP_LESS); break;
 	case TOKEN_LESS_EQUAL: emit_bytes(OP_GREATER, OP_NOT); break;
+	case TOKEN_PERCENT: emit_byte(OP_MODULE); break;
 	default:
 		return; // Unreachable.
 	}
