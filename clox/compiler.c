@@ -27,6 +27,13 @@ typedef struct Compiler {
 	int scope_depth;
 } Compiler;
 
+typedef struct {
+	bool is_in_loop;
+	int loop_init; // Stores current loop init position. To use with continue.
+	// Stores break statement JUMP. To patch for exit. Doing by this way only one break per loop is admited
+	int jump_to_exit;
+} LoopMetadata;
+
 typedef enum {
 	PREC_NONE,
 	PREC_ASSIGNMENT,  // =
@@ -59,6 +66,8 @@ static void expr_stmt();
 static void if_stmt();
 static void for_stmt();
 static void while_stmt();
+static void break_stmt();
+static void continue_stmt();
 static void declaration();
 
 static int emit_jump(uint8_t op_code);
@@ -116,7 +125,7 @@ ParseRule rules[] = {
   { variable, NULL,    PREC_NONE },       // TOKEN_IDENTIFIER
   { string,   NULL,    PREC_NONE },       // TOKEN_STRING
   { number,   NULL,    PREC_NONE },       // TOKEN_NUMBER
-  { NULL,     and_,    PREC_AND },       // TOKEN_AND
+  { NULL,     and_,    PREC_AND },        // TOKEN_AND
   { NULL,     NULL,    PREC_NONE },       // TOKEN_CLASS
   { NULL,     NULL,    PREC_NONE },       // TOKEN_ELSE
   { literal,  NULL,    PREC_NONE },       // TOKEN_FALSE
@@ -124,7 +133,7 @@ ParseRule rules[] = {
   { NULL,     NULL,    PREC_NONE },       // TOKEN_FUN
   { NULL,     NULL,    PREC_NONE },       // TOKEN_IF
   { literal,  NULL,    PREC_NONE },       // TOKEN_NIL
-  { NULL,     or_,    PREC_OR },       // TOKEN_OR
+  { NULL,     or_,    PREC_OR },          // TOKEN_OR
   { NULL,     NULL,    PREC_NONE },       // TOKEN_PRINT
   { NULL,     NULL,    PREC_NONE },       // TOKEN_RETURN
   { NULL,     NULL,    PREC_NONE },       // TOKEN_SUPER
@@ -132,6 +141,8 @@ ParseRule rules[] = {
   { literal,  NULL,    PREC_NONE },       // TOKEN_TRUE
   { NULL,     NULL,    PREC_NONE },       // TOKEN_VAR
   { NULL,     NULL,    PREC_NONE },       // TOKEN_WHILE
+  { NULL,     NULL,    PREC_NONE },       // TOKEN_BREAK
+  { NULL,     NULL,    PREC_NONE },       // TOKEN_CONTINUE
   { NULL,     NULL,    PREC_NONE },       // TOKEN_ERROR
   { NULL,     NULL,    PREC_NONE },       // TOKEN_EOF
 };
@@ -145,6 +156,8 @@ Parser parser;
 Compiler* current = NULL;
 
 Chunk* compiling_chunk;
+
+LoopMetadata loop_metadata;
 
 static void add_local(Token name) {
 	if(current->local_count == UINT8_COUNT) {
@@ -160,6 +173,12 @@ static void init_compiler(Compiler* compiler) {
 	compiler->local_count = 0;
 	compiler->scope_depth = 0;
 	current = compiler;
+}
+
+static void init_loop_metadata() {
+	loop_metadata.is_in_loop = false;
+	loop_metadata.loop_init = -1;
+	loop_metadata.jump_to_exit = -1;
 }
 
 static Chunk* current_chunk() {
@@ -225,7 +244,7 @@ static void advance() {
 	for (;;) {
 		parser.current = scan_token();
 #ifdef DEBUG_PRINT_SCAN
-		printf("TOKEN %u\n", parser.current.type);
+		printf("%s\n", get_token_str(parser.current.type));
 #endif
 		if (parser.current.type != TOKEN_ERROR) break;
 		error_at_current(parser.current.start);
@@ -376,13 +395,49 @@ static void statement() {
 		while_stmt();
 	} else if(match(TOKEN_FOR)) {
 		for_stmt();
+	} else if(match(TOKEN_BREAK)) {
+		break_stmt();
+	} else if(match(TOKEN_CONTINUE)) {
+		continue_stmt();
 	} else {
 		expr_stmt();
 	}
 }
 
+static void continue_stmt() {
+	consume(TOKEN_SEMICOLON, "Expected ; after break");
+	if(!loop_metadata.is_in_loop) {
+		error("Illegal continue statment. You can only use continue inside loops.");
+	}
+	emit_loop(loop_metadata.loop_init);
+}
+
+static void break_stmt() {
+	consume(TOKEN_SEMICOLON, "Expected ; after break");
+	if(!loop_metadata.is_in_loop) {
+		error("Illegal break statment. You can only use break inside loops.");
+	}
+	if(loop_metadata.jump_to_exit != -1) {
+		error("You can only have one break inside loop");
+	}
+	loop_metadata.jump_to_exit = emit_jump(OP_JUMP);
+}
+
+static void handle_loop_metadata() {
+	if(loop_metadata.jump_to_exit != -1) {
+		patch_jump(loop_metadata.jump_to_exit);
+	}
+	init_loop_metadata();
+}
+
+static void start_loop_metadata() {
+	loop_metadata.is_in_loop = true;
+	loop_metadata.loop_init = current_chunk()->size;
+}
+
 static void for_stmt() {
 	begin_scope();
+	start_loop_metadata(); // Enable continue and break statements
 	consume(TOKEN_LEFT_PAREN, "Expected ( after for");
 	if(match(TOKEN_SEMICOLON)) {
 		// NO INITIALIZER
@@ -423,11 +478,13 @@ static void for_stmt() {
 		patch_jump(exit_jump);
 		emit_byte(OP_POP); // clean condition
 	}
+	handle_loop_metadata();
 	end_scope();
 }
 
 static void while_stmt() {
 	int loop_start = current_chunk()->size;
+	start_loop_metadata(); // Enable continue and break statements
 	consume(TOKEN_LEFT_PAREN, "Expected ( after while");
 	expression();
 	consume(TOKEN_RIGHT_PAREN, "Expected ) after while");
@@ -437,6 +494,7 @@ static void while_stmt() {
 	emit_loop(loop_start);
 	patch_jump(exit_pos);
 	emit_byte(OP_POP);
+	handle_loop_metadata();
 }
 
 static void emit_loop(int back_pos) {
@@ -553,9 +611,9 @@ static void binary(bool can_assign) {
 
 	// Emit the operator instruction.
 	switch (operatorType) {
-	case TOKEN_PLUS:  emit_byte(OP_ADD); break;
+	case TOKEN_PLUS: emit_byte(OP_ADD); break;
 	case TOKEN_MINUS: emit_byte(OP_SUBSTRACT); break;
-	case TOKEN_STAR:  emit_byte(OP_MULTIPLY); break;
+	case TOKEN_STAR: emit_byte(OP_MULTIPLY); break;
 	case TOKEN_SLASH: emit_byte(OP_DIVIDE); break;
 	case TOKEN_BANG_EQUAL: emit_bytes(OP_EQUAL, OP_NOT); break;
 	case TOKEN_EQUAL_EQUAL: emit_byte(OP_EQUAL); break;
@@ -641,6 +699,7 @@ static int resolve_local(Compiler* compiler, Token* name) {
 
 bool compile(const char* source, Chunk* chunk) {
 	init_scanner(source);
+	init_loop_metadata();
 	Compiler compiler;
 	init_compiler(&compiler);
 	compiling_chunk = chunk;

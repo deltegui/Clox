@@ -4,6 +4,7 @@
 #include "common.h"
 #include "chunk.h"
 
+char* get_token_str(int token);
 void disassemble_chunk(Chunk* chunk, const char* name);
 int disassemble_instruction(Chunk* chunk, int position);
 
