@@ -371,7 +371,7 @@ func (p Parser) addition() Expr {
 func (p Parser) multiplication() Expr {
 	var expr Expr
 	expr = p.unary()
-	for p.tokens.isCurrentEqual(lexer.TokenStar, lexer.TokenSlash) {
+	for p.tokens.isCurrentEqual(lexer.TokenStar, lexer.TokenSlash, lexer.TokenPercent) {
 		multiply := p.tokens.consume()
 		right := p.unary()
 		expr = BinaryExpr{

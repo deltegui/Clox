@@ -18,6 +18,7 @@ const (
 	TokenSlash      TokenType = "Slash"
 	TokenStar       TokenType = "Star"
 	TokenDot        TokenType = "Dot"
+	TokenPercent	TokenType = "Percent"
 )
 
 //One or two character tokens

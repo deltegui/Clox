@@ -88,6 +88,9 @@ func (lex *Lexer) scanToken() {
 	case '*':
 		lex.addToken(TokenStar)
 		break
+	case '%':
+		lex.addToken(TokenPercent)
+		break
 	case '!':
 		if lex.source.currentIs('=') {
 			lex.source.avance()

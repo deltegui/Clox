@@ -5,6 +5,7 @@ import (
 	"golox/lexer"
 	"golox/parser"
 	"os"
+	"math"
 )
 
 type Interpreter struct {
@@ -83,6 +84,11 @@ func (interpreter Interpreter) VisitBinary(expr parser.BinaryExpr) interface{} {
 			panic("Cannot multiply something and number")
 		}
 		return (left.(float64)) * (right.(float64))
+	case lexer.TokenPercent:
+		if !isLeftFloat || !isRightFloat {
+			panic("Cannot module something and number")
+		}
+		return math.Mod(left.(float64), right.(float64))
 	case lexer.TokenSlash:
 		if !isLeftFloat || !isRightFloat {
 			panic("Cannot divide something and number")

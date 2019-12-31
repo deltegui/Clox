@@ -1,5 +1,0 @@
-var a = 11;
-var c = -22;
-print a + c;
-c = a;
-print c;
