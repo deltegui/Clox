@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#include <time.h>
 #include <math.h>
 #include "vm.h"
 #include "object.h"
@@ -20,12 +21,19 @@ static void concatenate_str();
 static void free_objects();
 static bool call_value(Value callee, int arg_count);
 static bool call(ObjFunction* func, int arg_count);
+static void define_native(const char* name, NativeFn native);
+
+static Value clock_native(int argCount, Value* args) {
+ 	return NUMBER_VALUE((double)clock() / CLOCKS_PER_SEC);
+}
 
 void init_vm() {
 	stack_reset();
 	vm.objects = NULL;
 	init_table(&vm.strings);
 	init_table(&vm.globals);
+
+	define_native("clock", clock_native);
 }
 
 void free_vm() {
@@ -282,6 +290,13 @@ static void concatenate_str() {
 static bool call_value(Value callee, int arg_count) {
 	switch(OBJ_TYPE(callee)) {
 	case OBJ_FUNCTION: return call(AS_FUNCTION(callee), arg_count);
+	case OBJ_NATIVE: {
+		NativeFn native = AS_NATIVE(callee);
+		Value result = native(arg_count, vm.stack_top - arg_count);
+		vm.stack_top -= arg_count + 1;
+		stack_push(result);
+		return true;
+	}
 	default:
 		break;
 	}
@@ -314,4 +329,14 @@ static void free_objects() {
 		free_object(current);
 		current = next;
 	}
+}
+
+static void define_native(const char* name, NativeFn native) {
+	// Here we stack first and pop to let gc know that we are working
+	// with ObjString* and ObjNative*. Soooo it won't delete these pointers.
+	stack_push(OBJ_VALUE(copy_string(name, (int)strlen(name))));
+	stack_push(OBJ_VALUE(new_native(native)));
+	table_set(&vm.globals, AS_STRING(vm.stack[0]), vm.stack[1]);
+	stack_pop();
+	stack_pop();
 }

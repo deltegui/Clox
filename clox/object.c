@@ -47,6 +47,7 @@ void print_object(Value value) {
     switch(OBJ_TYPE(value)) {
     case OBJ_FUNCTION: print_function(AS_FUNCTION(value)); break;
     case OBJ_STRING: printf("%s", AS_CSTRING(value)); break;
+    case OBJ_NATIVE: printf("<native code>"); break;
     }
 }
 
@@ -83,4 +84,10 @@ ObjFunction* new_function() {
     init_chunk(&func->chunk);
     func->name = NULL;
     return func;
+}
+
+ObjNative* new_native(NativeFn function) {
+    ObjNative* native = ALLOCATE_OBJ(ObjNative, OBJ_NATIVE);
+    native->function = function;
+    return native;
 }

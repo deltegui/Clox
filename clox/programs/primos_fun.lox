@@ -9,20 +9,24 @@
 // PHP 7.3.9: php ./primes.php  						1,05s user 0,02s system 98% cpu 1,080 total
 // C: ./primes  										0,11s user 0,01s system 24% cpu 0,494 total
 
-var found = 0;
-var i = 2;
-var primo;
-while(found <= 1000) {
-	primo = true;
-	for(var j = i - 1; j > 1; j = j - 1) {
-		if(i % j == 0) {
-			primo = false;
+fun primes() {
+	var found = 0;
+	var i = 2;
+	var primo;
+	while(found <= 1000) {
+		primo = true;
+		for(var j = i - 1; j > 1; j = j - 1) {
+			if(i % j == 0) {
+				primo = false;
+			}
 		}
+		if(primo) {
+			print i;
+			found = found + 1;
+		}
+		i = i + 1;
 	}
-	if(primo) {
-		print i;
-		found = found + 1;
-	}
-	i = i + 1;
 }
+
+primes();
 print "DONE";
