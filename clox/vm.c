@@ -39,7 +39,7 @@ InterpretResult interpret(const char* source) {
 	if(func == NULL) {
 		return INTERPRET_COMPILE_ERROR;
 	}
-	CallFrame* frame = &vm.frames[vm.frames_count++];
+	CallFrame* frame = &vm.frames[vm.frames_count];
 	frame->func = func;
 	frame->pc = func->chunk.code;
 	frame->slots = vm.stack;
@@ -67,7 +67,6 @@ static InterpretResult run() {
 	} while(false)
 
 	for (;;) {
-
 #ifdef DEBUG_TRACE_EXECUTION
 		printf("         ");
 		for (Value* val_ptr = vm.stack; val_ptr < vm.stack_top; val_ptr++) {

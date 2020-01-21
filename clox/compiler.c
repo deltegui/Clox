@@ -368,7 +368,7 @@ static void function(FunctionType type) {
 
 	// Compile the parameter list.
 	consume(TOKEN_LEFT_PAREN, "Expect '(' after function name.");
-	if(!match(TOKEN_RIGHT_PAREN)) {
+	if(!check(TOKEN_RIGHT_PAREN)) {
 		do {
 			current->func->arity++;
 			if(current->func->arity > 255) {
@@ -378,6 +378,7 @@ static void function(FunctionType type) {
 			define_variable(param);
 		} while(match(TOKEN_COMMA));
 	}
+	consume(TOKEN_RIGHT_PAREN, "Expected ) after parameter list in function declaration");
 
 	// The body.
 	consume(TOKEN_LEFT_BRACE, "Expect '{' before function body.");
@@ -466,7 +467,7 @@ static void statement() {
 		break_stmt();
 	} else if(match(TOKEN_CONTINUE)) {
 		continue_stmt();
-	} else if(match(TOKEN_CONTINUE)) {
+	} else if(match(TOKEN_RETURN)) {
 		return_stmt();
 	} else {
 		expr_stmt();
@@ -474,6 +475,9 @@ static void statement() {
 }
 
 static void return_stmt() {
+	if(current->type == TYPE_SCRIPT) {
+		error("Cannot use return in global");
+	}
 	if(match(TOKEN_SEMICOLON)) {
 		emit_return();
 	} else {
@@ -751,7 +755,7 @@ static void call(bool can_assign) {
 
 static uint8_t argument_list() {
 	uint8_t args = 0;
-	if(!match(TOKEN_RIGHT_PAREN)) {
+	if(!check(TOKEN_RIGHT_PAREN)) {
 		do {
 			expression();
 			if(args == 255) {
@@ -760,6 +764,7 @@ static uint8_t argument_list() {
 			args++;
 		} while(match(TOKEN_COMMA));
 	}
+	consume(TOKEN_RIGHT_PAREN, "Expected ) after function call");
 	return args;
 }
 
