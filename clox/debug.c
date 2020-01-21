@@ -102,6 +102,13 @@ int disassemble_instruction(Chunk* chunk, int position) {
 		return jump_instruction("OP_LOOP", chunk, position, DIR_BACKWARDS);
 	case OP_CALL:
     	return byte_instruction("OP_CALL", chunk, position);
+    case OP_CLOSURE: {
+    	uint8_t constant = chunk->code[++position];
+    	printf("%-16s %4d ", "OP_CLOSURE", constant);
+    	print_value(chunk->constants.values[constant]);
+    	printf("\n");
+    	return position + 1;
+    }
 	default: {
 		printf("ERROR: UNDEFINED OPCODE: %d\n", opcode);
 		return position + 1;

@@ -46,6 +46,7 @@ static Obj* allocate_object(size_t size, ObjType type) {
 void print_object(Value value) {
     switch(OBJ_TYPE(value)) {
     case OBJ_FUNCTION: print_function(AS_FUNCTION(value)); break;
+    case OBJ_CLOSURE: print_function(AS_CLOSURE(value)->function); break;
     case OBJ_STRING: printf("%s", AS_CSTRING(value)); break;
     case OBJ_NATIVE: printf("<native code>"); break;
     }
@@ -90,4 +91,10 @@ ObjNative* new_native(NativeFn function) {
     ObjNative* native = ALLOCATE_OBJ(ObjNative, OBJ_NATIVE);
     native->function = function;
     return native;
+}
+
+ObjClosure* new_closure(ObjFunction* function) {
+    ObjClosure* closure = ALLOCATE_OBJ(ObjClosure, OBJ_CLOSURE);
+    closure->function = function;
+    return closure;
 }

@@ -20,7 +20,7 @@ static void runtime_error(const char* format, ...);
 static void concatenate_str();
 static void free_objects();
 static bool call_value(Value callee, int arg_count);
-static bool call(ObjFunction* func, int arg_count);
+static bool call(ObjClosure* closure, int arg_count);
 static void define_native(const char* name, NativeFn native);
 
 static Value clock_native(int argCount, Value* args) {
@@ -47,12 +47,15 @@ InterpretResult interpret(const char* source) {
 	if(func == NULL) {
 		return INTERPRET_COMPILE_ERROR;
 	}
+	stack_push(OBJ_VALUE(func));
+	ObjClosure* closure = new_closure(func);
 	CallFrame* frame = &vm.frames[vm.frames_count];
-	frame->func = func;
+	frame->closure = closure;
 	frame->pc = func->chunk.code;
 	frame->slots = vm.stack;
-	stack_push(OBJ_VALUE(func));
-	call_value(OBJ_VALUE(func), 0);
+	stack_pop();
+	stack_push(OBJ_VALUE(closure));
+	call_value(OBJ_VALUE(closure), 0);
 	return run();
 }
 
@@ -60,7 +63,7 @@ static InterpretResult run() {
 	CallFrame* frame = &vm.frames[vm.frames_count - 1];
 
 #define READ_BYTE() (*frame->pc++)
-#define READ_CONSTANT() (frame->func->chunk.constants.values[READ_BYTE()])
+#define READ_CONSTANT() (frame->closure->function->chunk.constants.values[READ_BYTE()])
 #define READ_STRING() AS_STRING(READ_CONSTANT())
 #define READ_SHORT() (frame->pc += 2, (uint16_t)((frame->pc[-2] << 8) | frame->pc[-1]))
 #define BINARY_OP(value_type, op) \
@@ -83,7 +86,7 @@ static InterpretResult run() {
 			printf(" ]");
 		}
 		printf("\n");
-		disassemble_instruction(&frame->func->chunk, (int)(frame->pc - frame->func->chunk.code));
+		disassemble_instruction(&frame->closure->function->chunk, (int)(frame->pc - frame->closure->function->chunk.code));
 #endif
 
 		uint8_t instruction;
@@ -219,6 +222,12 @@ static InterpretResult run() {
 			frame = &vm.frames[vm.frames_count - 1];
 			break;
 		}
+		case OP_CLOSURE: {
+			ObjFunction* func = AS_FUNCTION(READ_CONSTANT());
+			ObjClosure* closure = new_closure(func);
+			stack_push(OBJ_VALUE(closure));
+			break;
+		}
 		}
 	}
 #undef BINARY_OP
@@ -257,7 +266,7 @@ static void runtime_error(const char* format, ...) {
 
 	for (int i = vm.frames_count - 1; i >= 0; i--) {
 	    CallFrame* frame = &vm.frames[i];
-	    ObjFunction* func = frame->func;
+	    ObjFunction* func = frame->closure->function;
 	    // -1 because the IP is sitting on the next instruction to be
 	    // executed.
 	    size_t instruction = frame->pc - func->chunk.code - 1;
@@ -289,7 +298,7 @@ static void concatenate_str() {
 
 static bool call_value(Value callee, int arg_count) {
 	switch(OBJ_TYPE(callee)) {
-	case OBJ_FUNCTION: return call(AS_FUNCTION(callee), arg_count);
+	case OBJ_CLOSURE: return call(AS_CLOSURE(callee), arg_count);
 	case OBJ_NATIVE: {
 		NativeFn native = AS_NATIVE(callee);
 		Value result = native(arg_count, vm.stack_top - arg_count);
@@ -304,10 +313,10 @@ static bool call_value(Value callee, int arg_count) {
 	return false;
 }
 
-static bool call(ObjFunction* func, int arg_count) {
-	if (arg_count != func->arity) {
+static bool call(ObjClosure* closure, int arg_count) {
+	if (arg_count != closure->function->arity) {
 	    runtime_error("Expected %d arguments but got %d.",
-	        func->arity, arg_count);
+	        closure->function->arity, arg_count);
 	    return false;
   	}
   	if(vm.frames_count == FRAMES_MAX) {
@@ -315,8 +324,8 @@ static bool call(ObjFunction* func, int arg_count) {
   		return false;
   	}
 	CallFrame* frame = &vm.frames[vm.frames_count++];
-	frame->func = func;
-	frame->pc = func->chunk.code;
+	frame->closure = closure;
+	frame->pc = closure->function->chunk.code;
 
 	frame->slots = vm.stack_top - arg_count - 1;
 	return true;

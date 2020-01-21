@@ -28,5 +28,7 @@ fun primes() {
 	}
 }
 
+var init = clock();
 primes();
-print "DONE";
+print "DONE!";
+print clock() - init;

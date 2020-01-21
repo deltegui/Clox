@@ -386,7 +386,7 @@ static void function(FunctionType type) {
 
 	// Create the function object.
 	ObjFunction* func = end_compiler();
-	emit_bytes(OP_CONSTANT, make_constant(OBJ_VALUE(func)));
+	emit_bytes(OP_CLOSURE, make_constant(OBJ_VALUE(func)));
 }
 
 static void var_declaration() {
