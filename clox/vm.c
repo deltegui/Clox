@@ -16,9 +16,10 @@ static Value stack_pop();
 static void stack_reset();
 static Value stack_peek(int distance);
 static void runtime_error(const char* format, ...);
-static void free_objects();
-static void free_object(Obj* object);
 static void concatenate_str();
+static void free_objects();
+static bool call_value(Value callee, int arg_count);
+static bool call(ObjFunction* func, int arg_count);
 
 void init_vm() {
 	stack_reset();
@@ -34,24 +35,26 @@ void free_vm() {
 }
 
 InterpretResult interpret(const char* source) {
-	Chunk chunk;
-	init_chunk(&chunk);
-	if (!compile(source, &chunk)) {
-		free_chunk(&chunk);
+	ObjFunction* func = compile(source);
+	if(func == NULL) {
 		return INTERPRET_COMPILE_ERROR;
 	}
-	vm.chunk = &chunk;
-	vm.pc = vm.chunk->code;
-	InterpretResult result = run();
-	free_chunk(&chunk);
-	return result;
+	CallFrame* frame = &vm.frames[vm.frames_count++];
+	frame->func = func;
+	frame->pc = func->chunk.code;
+	frame->slots = vm.stack;
+	stack_push(OBJ_VALUE(func));
+	call_value(OBJ_VALUE(func), 0);
+	return run();
 }
 
 static InterpretResult run() {
-#define READ_BYTE() (*vm.pc++)
-#define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
+	CallFrame* frame = &vm.frames[vm.frames_count - 1];
+
+#define READ_BYTE() (*frame->pc++)
+#define READ_CONSTANT() (frame->func->chunk.constants.values[READ_BYTE()])
 #define READ_STRING() AS_STRING(READ_CONSTANT())
-#define READ_SHORT() (vm.pc += 2, (uint16_t)((vm.pc[-2] << 8) | vm.pc[-1]))
+#define READ_SHORT() (frame->pc += 2, (uint16_t)((frame->pc[-2] << 8) | frame->pc[-1]))
 #define BINARY_OP(value_type, op) \
 	do {\
 		if(!IS_NUMBER(stack_peek(0)) || !IS_NUMBER(stack_peek(1))) { \
@@ -73,12 +76,23 @@ static InterpretResult run() {
 			printf(" ]");
 		}
 		printf("\n");
-		disassemble_instruction(vm.chunk, (int)(vm.pc - vm.chunk->code));
+		disassemble_instruction(&frame->func->chunk, (int)(frame->pc - frame->func->chunk.code));
 #endif
 
 		uint8_t instruction;
 		switch (instruction = READ_BYTE()) {
-		case OP_RETURN: return INTERPRET_OK;
+		case OP_RETURN: {
+			Value result = stack_pop();
+	        vm.frames_count--;
+	        if (vm.frames_count == 0) {
+				stack_pop();
+				return INTERPRET_OK;
+	        }
+	        vm.stack_top = frame->slots;
+	        stack_push(result);
+	        frame = &vm.frames[vm.frames_count - 1];
+	        break;
+		};
 		case OP_POP: stack_pop(); break;
 		case OP_CONSTANT: {
 			Value constant = READ_CONSTANT();
@@ -164,30 +178,38 @@ static InterpretResult run() {
 			break;
 		}
 		case OP_GET_LOCAL: {
-			uint8_t stack_index = READ_BYTE();
-			stack_push(vm.stack[stack_index]);
+			uint8_t slot = READ_BYTE();
+			stack_push(frame->slots[slot]);
 			break;
 		}
 		case OP_SET_LOCAL: {
-			uint8_t stack_index = READ_BYTE();
-			vm.stack[stack_index] = stack_peek(0);
+			uint8_t slot = READ_BYTE();
+			frame->slots[slot] = stack_peek(0);
 			break;
 		}
 		case OP_JUMP_IF_FALSE: {
 			uint16_t offset = READ_SHORT();
 			if(is_falsy(stack_peek(0))) {
-				vm.pc += offset;
+				frame->pc += offset;
 			}
 			break;
 		}
 		case OP_JUMP: {
 			uint16_t offset = READ_SHORT();
-			vm.pc += offset;
+			frame->pc += offset;
 			break;
 		}
 		case OP_LOOP: {
 			uint16_t offset = READ_SHORT();
-			vm.pc -= offset;
+			frame->pc -= offset;
+			break;
+		}
+		case OP_CALL: {
+			uint8_t args = READ_BYTE();
+			if(!call_value(stack_peek(args), args)) {
+				return INTERPRET_RUNTIME_ERROR;
+			}
+			frame = &vm.frames[vm.frames_count - 1];
 			break;
 		}
 		}
@@ -202,6 +224,7 @@ static InterpretResult run() {
 
 static void stack_reset() {
 	vm.stack_top = vm.stack;
+	vm.frames_count = 0;
 }
 
 static void stack_push(Value value) {
@@ -219,17 +242,28 @@ static Value stack_peek(int distance) {
 }
 
 static void runtime_error(const char* format, ...) {
-  va_list args;
-  va_start(args, format);
-  vfprintf(stderr, format, args);
-  va_end(args);
-  fputs("\n", stderr);
+	va_list args;
+	va_start(args, format);
+	vfprintf(stderr, format, args);
+	va_end(args);
+	fputs("\n", stderr);
 
-  size_t instruction = vm.pc - vm.chunk->code;
-  int line = vm.chunk->lines[instruction];
-  fprintf(stderr, "[line %d] in script\n", line);
+	for (int i = vm.frames_count - 1; i >= 0; i--) {
+	    CallFrame* frame = &vm.frames[i];
+	    ObjFunction* func = frame->func;
+	    // -1 because the IP is sitting on the next instruction to be
+	    // executed.
+	    size_t instruction = frame->pc - func->chunk.code - 1;
+	    fprintf(stderr, "[line %d] in ",
+	            func->chunk.lines[instruction]);
+	    if (func->name == NULL) {
+	    	fprintf(stderr, "script\n");
+	    } else {
+	    	fprintf(stderr, "%s()\n", func->name->chars);
+	    }
+	}
 
-  stack_reset();
+	stack_reset();
 }
 
 static void concatenate_str() {
@@ -246,6 +280,34 @@ static void concatenate_str() {
 	stack_push(OBJ_VALUE(result));
 }
 
+static bool call_value(Value callee, int arg_count) {
+	switch(OBJ_TYPE(callee)) {
+	case OBJ_FUNCTION: return call(AS_FUNCTION(callee), arg_count);
+	default:
+		break;
+	}
+	runtime_error("Can only call functions and classes");
+	return false;
+}
+
+static bool call(ObjFunction* func, int arg_count) {
+	if (arg_count != func->arity) {
+	    runtime_error("Expected %d arguments but got %d.",
+	        func->arity, arg_count);
+	    return false;
+  	}
+  	if(vm.frames_count == FRAMES_MAX) {
+  		runtime_error("Stack Overflow");
+  		return false;
+  	}
+	CallFrame* frame = &vm.frames[vm.frames_count++];
+	frame->func = func;
+	frame->pc = func->chunk.code;
+
+	frame->slots = vm.stack_top - arg_count - 1;
+	return true;
+}
+
 static void free_objects() {
 	Obj* current = vm.objects;
 	while(current != NULL) {
@@ -253,15 +315,4 @@ static void free_objects() {
 		free_object(current);
 		current = next;
 	}
-}
-
-static void free_object(Obj* object) {
-	switch (object->type) {
-    case OBJ_STRING: {
-      ObjString* string = (ObjString*)object;
-      FREE_ARRAY(char, string->chars, string->length + 1);
-      FREE(ObjString, object);
-      break;
-    }
-  }
 }

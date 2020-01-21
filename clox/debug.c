@@ -100,6 +100,8 @@ int disassemble_instruction(Chunk* chunk, int position) {
 		return jump_instruction("OP_JUMP_IF_FALSE", chunk, position, DIR_FORWARD);
 	case OP_LOOP:
 		return jump_instruction("OP_LOOP", chunk, position, DIR_BACKWARDS);
+	case OP_CALL:
+    	return byte_instruction("OP_CALL", chunk, position);
 	default: {
 		printf("ERROR: UNDEFINED OPCODE: %d\n", opcode);
 		return position + 1;

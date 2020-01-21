@@ -2,6 +2,7 @@
 #define clox_memory_h
 
 #include <stdlib.h>
+#include "object.h"
 
 #define ALLOCATE(type, count) \
     (type*)reallocate(NULL, 0, sizeof(type) * (count))
@@ -18,5 +19,6 @@
     reallocate(pointer, sizeof(type), 0)
 
 void* reallocate(void* oldptr, size_t old_count, size_t count);
+void free_object(Obj* object);
 
 #endif

@@ -9,6 +9,11 @@
 #include "debug.h"
 #endif
 
+typedef enum {
+	TYPE_FUNCTION,
+	TYPE_SCRIPT
+} FunctionType;
+
 typedef struct {
 	Token current;
 	Token previous;
@@ -22,6 +27,9 @@ typedef struct {
 } Local;
 
 typedef struct Compiler {
+	struct Compiler* enclosing;
+	ObjFunction* func;
+	FunctionType type;
 	Local locals[UINT8_COUNT];
 	int local_count;
 	int scope_depth;
@@ -67,8 +75,21 @@ static void if_stmt();
 static void for_stmt();
 static void while_stmt();
 static void break_stmt();
+static void return_stmt();
 static void continue_stmt();
+
 static void declaration();
+static void func_declaration();
+static void function(FunctionType type);
+static void var_declaration();
+
+static uint8_t parse_variable(const char* error_msg);
+static uint8_t identifier_constant(Token* identifier);
+static void define_variable(uint8_t global);
+static void declare_variable();
+static bool identifier_equals(Token* first, Token* second);
+static void mark_initialized();
+static int resolve_local(Compiler* compiler, Token* name);
 
 static int emit_jump(uint8_t op_code);
 static void patch_jump(int jump_position);
@@ -83,6 +104,8 @@ static void string(bool can_assign);
 static void variable(bool can_assign);
 static void and_(bool can_assign);
 static void or_(bool can_assign);
+static void call(bool can_assign);
+static uint8_t argument_list();
 static void named_variable(Token name, bool can_assign);
 
 static bool match(TokenType type);
@@ -90,20 +113,11 @@ static bool check(TokenType type);
 static void syncrhonize();
 static void advance();
 
-static void var_declaration();
-static uint8_t parse_variable(const char* error_msg);
-static uint8_t identifier_constant(Token* identifier);
-static void define_variable(uint8_t global);
-static void declare_variable();
-static bool identifier_equals(Token* first, Token* second);
-static void mark_initialized();
-static int resolve_local(Compiler* compiler, Token* name);
-
 static void begin_scope();
 static void end_scope();
 
 ParseRule rules[] = {
-  { grouping, NULL,    PREC_NONE },       // TOKEN_LEFT_PAREN
+  { grouping, call,    PREC_CALL },       // TOKEN_LEFT_PAREN
   { NULL,     NULL,    PREC_NONE },       // TOKEN_RIGHT_PAREN
   { NULL,     NULL,    PREC_NONE },       // TOKEN_LEFT_BRACE
   { NULL,     NULL,    PREC_NONE },       // TOKEN_RIGHT_BRACE
@@ -156,8 +170,6 @@ Parser parser;
 
 Compiler* current = NULL;
 
-Chunk* compiling_chunk;
-
 LoopMetadata loop_metadata;
 
 static void add_local(Token name) {
@@ -170,10 +182,19 @@ static void add_local(Token name) {
 	local->depth = -1;
 }
 
-static void init_compiler(Compiler* compiler) {
+static void init_compiler(Compiler* compiler, FunctionType type) {
+	compiler->enclosing = current;
+	compiler->func = NULL; // Garbage Collector Paranoia
 	compiler->local_count = 0;
 	compiler->scope_depth = 0;
+	compiler->type = type;
+	compiler->func = new_function();
 	current = compiler;
+
+	Local* local = &current->locals[current->local_count++];
+	local->depth = 0;
+	local->name.start = "";
+	local->name.length = 0;
 }
 
 static void init_loop_metadata() {
@@ -183,7 +204,7 @@ static void init_loop_metadata() {
 }
 
 static Chunk* current_chunk() {
-	return compiling_chunk;
+	return &current->func->chunk;
 }
 
 static void emit_byte(uint8_t byte) {
@@ -271,6 +292,7 @@ static bool check(TokenType type) {
 }
 
 static void emit_return() {
+	emit_byte(OP_NIL);
 	emit_byte(OP_RETURN);
 }
 
@@ -287,13 +309,16 @@ static void emit_constant(Value value) {
 	emit_bytes(OP_CONSTANT, make_constant(value));
 }
 
-static void end_compiler() {
+static ObjFunction* end_compiler() {
 	emit_return();
+	ObjFunction* func = current->func;
 #ifdef DEBUG_PRINT_CODE
 	if (!parser.had_error) {
-		disassemble_chunk(current_chunk(), "code");
+		disassemble_chunk(current_chunk(), func->name ? func->name->chars : "<GLOBAL>");
 	}
 #endif
+	current = current->enclosing;
+	return func;
 }
 
 static void parse_precedence(Precedence precedence) {
@@ -315,12 +340,52 @@ static void parse_precedence(Precedence precedence) {
 }
 
 static void declaration() {
-	if(match(TOKEN_VAR)) {
+	if(match(TOKEN_FUN)) {
+		func_declaration();
+	} else if(match(TOKEN_VAR)) {
 		var_declaration();
 	} else {
 		statement();
 	}
 	if(parser.panic_mode) syncrhonize();
+}
+
+static void func_declaration() {
+	uint8_t func_name = parse_variable("Expected function name");
+	mark_initialized();
+	function(TYPE_FUNCTION);
+	define_variable(func_name);
+}
+
+static void function(FunctionType type) {
+	Compiler compiler;
+	init_compiler(&compiler, type);
+	begin_scope();
+
+	if(type != TYPE_SCRIPT) {
+		current->func->name = copy_string(parser.previous.start, parser.previous.length);
+	}
+
+	// Compile the parameter list.
+	consume(TOKEN_LEFT_PAREN, "Expect '(' after function name.");
+	if(!match(TOKEN_RIGHT_PAREN)) {
+		do {
+			current->func->arity++;
+			if(current->func->arity > 255) {
+				error("Too many function arguments");
+			}
+			uint8_t param = parse_variable("Expected parameter name");
+			define_variable(param);
+		} while(match(TOKEN_COMMA));
+	}
+
+	// The body.
+	consume(TOKEN_LEFT_BRACE, "Expect '{' before function body.");
+	block_stmt();
+
+	// Create the function object.
+	ObjFunction* func = end_compiler();
+	emit_bytes(OP_CONSTANT, make_constant(OBJ_VALUE(func)));
 }
 
 static void var_declaration() {
@@ -380,6 +445,7 @@ static void define_variable(uint8_t global) {
 }
 
 static void mark_initialized() {
+	if(current->scope_depth == 0) return;
 	current->locals[current->local_count-1].depth = current->scope_depth;
 }
 
@@ -400,8 +466,20 @@ static void statement() {
 		break_stmt();
 	} else if(match(TOKEN_CONTINUE)) {
 		continue_stmt();
+	} else if(match(TOKEN_CONTINUE)) {
+		return_stmt();
 	} else {
 		expr_stmt();
+	}
+}
+
+static void return_stmt() {
+	if(match(TOKEN_SEMICOLON)) {
+		emit_return();
+	} else {
+		expression();
+		consume(TOKEN_SEMICOLON, "Expected ; after return statement");
+		emit_byte(OP_RETURN);
 	}
 }
 
@@ -666,6 +744,25 @@ static void variable(bool can_assign) {
 	named_variable(parser.previous, can_assign);
 }
 
+static void call(bool can_assign) {
+	uint8_t arg_count = argument_list();
+	emit_bytes(OP_CALL, arg_count);
+}
+
+static uint8_t argument_list() {
+	uint8_t args = 0;
+	if(!match(TOKEN_RIGHT_PAREN)) {
+		do {
+			expression();
+			if(args == 255) {
+				error("Cannot have more than 255 arguments in function call");
+			}
+			args++;
+		} while(match(TOKEN_COMMA));
+	}
+	return args;
+}
+
 static void named_variable(Token name, bool can_assign) {
 	uint8_t set_op, get_op;
 	int arg = resolve_local(current, &name);
@@ -699,18 +796,17 @@ static int resolve_local(Compiler* compiler, Token* name) {
 	return -1;
 }
 
-bool compile(const char* source, Chunk* chunk) {
+ObjFunction* compile(const char* source) {
 	init_scanner(source);
 	init_loop_metadata();
 	Compiler compiler;
-	init_compiler(&compiler);
-	compiling_chunk = chunk;
+	init_compiler(&compiler, TYPE_SCRIPT);
 	parser.had_error = false;
 	parser.panic_mode = false;
 	advance();
 	while(!match(TOKEN_EOF)) {
 		declaration();
 	}
-	end_compiler();
-	return !parser.had_error;
+	ObjFunction* func = end_compiler();
+	return parser.had_error ? NULL : func;
 }
