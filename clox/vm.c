@@ -22,6 +22,8 @@ static void free_objects();
 static bool call_value(Value callee, int arg_count);
 static bool call(ObjClosure* closure, int arg_count);
 static void define_native(const char* name, NativeFn native);
+static ObjUpvalue* capture_upvalue(Value* value);
+static void close_upvalues(Value* last);
 
 static Value clock_native(int argCount, Value* args) {
  	return NUMBER_VALUE((double)clock() / CLOCKS_PER_SEC);
@@ -30,6 +32,7 @@ static Value clock_native(int argCount, Value* args) {
 void init_vm() {
 	stack_reset();
 	vm.objects = NULL;
+	vm.open_upvalues = NULL;
 	init_table(&vm.strings);
 	init_table(&vm.globals);
 
@@ -93,6 +96,7 @@ static InterpretResult run() {
 		switch (instruction = READ_BYTE()) {
 		case OP_RETURN: {
 			Value result = stack_pop();
+			close_upvalues(frame->slots);
 	        vm.frames_count--;
 	        if (vm.frames_count == 0) {
 				stack_pop();
@@ -226,6 +230,30 @@ static InterpretResult run() {
 			ObjFunction* func = AS_FUNCTION(READ_CONSTANT());
 			ObjClosure* closure = new_closure(func);
 			stack_push(OBJ_VALUE(closure));
+			for(int i = 0; i < closure->upvalue_count; i++) {
+				uint8_t is_local = READ_BYTE();
+				uint8_t index = READ_BYTE();
+				if(is_local) {
+					closure->upvalues[i] = capture_upvalue(frame->slots + index);
+				} else {
+					closure->upvalues[i] = frame->closure->upvalues[index];
+				}
+			}
+			break;
+		}
+		case OP_GET_UPVALUE: {
+			uint8_t index = READ_BYTE();
+			stack_push(*frame->closure->upvalues[index]->location);
+			break;
+		}
+		case OP_SET_UPVALUE: {
+			uint8_t index = READ_BYTE();
+			*frame->closure->upvalues[index]->location = stack_peek(0);
+			break;
+		}
+		case OP_CLOSE_UPVALUE: {
+			close_upvalues(vm.stack_top - 1);
+			stack_pop();
 			break;
 		}
 		}
@@ -348,4 +376,36 @@ static void define_native(const char* name, NativeFn native) {
 	table_set(&vm.globals, AS_STRING(vm.stack[0]), vm.stack[1]);
 	stack_pop();
 	stack_pop();
+}
+
+static ObjUpvalue* capture_upvalue(Value* value) {
+	ObjUpvalue* prev_upvalue = NULL;
+	ObjUpvalue* upvalue = vm.open_upvalues;
+
+	while(upvalue != NULL && upvalue->location > value) {
+		prev_upvalue = upvalue;
+		upvalue = upvalue->next;
+	}
+
+	if(upvalue != NULL && upvalue->location == value) return upvalue;
+
+	ObjUpvalue* created = new_upvalue(value);
+
+	created->next = upvalue;
+	if(prev_upvalue == NULL) {
+		vm.open_upvalues = created;
+	} else {
+		prev_upvalue->next = created;
+	}
+
+	return created;
+}
+
+static void close_upvalues(Value* last) {
+	while(vm.open_upvalues != NULL && vm.open_upvalues->location >= last) {
+		ObjUpvalue* upvalue = vm.open_upvalues;
+		upvalue->closed = *upvalue->location;
+		upvalue->location = &upvalue->closed;
+		vm.open_upvalues = upvalue->next;
+	}
 }

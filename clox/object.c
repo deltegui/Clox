@@ -49,6 +49,7 @@ void print_object(Value value) {
     case OBJ_CLOSURE: print_function(AS_CLOSURE(value)->function); break;
     case OBJ_STRING: printf("%s", AS_CSTRING(value)); break;
     case OBJ_NATIVE: printf("<native code>"); break;
+    case OBJ_UPVALUE: printf("upvalue"); break;
     }
 }
 
@@ -82,6 +83,7 @@ static uint32_t hash_string(const char* chars, int length) {
 ObjFunction* new_function() {
     ObjFunction* func = ALLOCATE_OBJ(ObjFunction, OBJ_FUNCTION);
     func->arity = 0;
+    func->upvalue_count = 0;
     init_chunk(&func->chunk);
     func->name = NULL;
     return func;
@@ -95,6 +97,20 @@ ObjNative* new_native(NativeFn function) {
 
 ObjClosure* new_closure(ObjFunction* function) {
     ObjClosure* closure = ALLOCATE_OBJ(ObjClosure, OBJ_CLOSURE);
+    ObjUpvalue** upvalues = ALLOCATE(ObjUpvalue*, function->upvalue_count);
+    for(int i = 0; i < function->upvalue_count; i++) {
+        upvalues[i] = NULL;
+    }
     closure->function = function;
+    closure->upvalues = upvalues;
+    closure->upvalue_count = function->upvalue_count;
     return closure;
+}
+
+ObjUpvalue* new_upvalue(Value* slot) {
+    ObjUpvalue* upvalue = ALLOCATE_OBJ(ObjUpvalue, OBJ_UPVALUE);
+    upvalue->location = slot;
+    upvalue->next = NULL;
+    upvalue->closed = NIL_VALUE();
+    return upvalue;
 }

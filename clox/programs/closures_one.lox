@@ -1,0 +1,11 @@
+fun outer() {
+  var x = "outside";
+  fun inner() {
+    print x;
+  }
+  return inner;
+}
+
+var i = outer();
+var x = 44 * 5 + 6;
+i();

@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "debug.h"
+#include "object.h"
 
 static int simple_instruction(const char* name, int position);
 static int constant_instruction(const char* op_name, Chunk* chunk, int position);
@@ -82,6 +83,8 @@ int disassemble_instruction(Chunk* chunk, int position) {
 		return simple_instruction("OP_PRINT", position);
 	case OP_POP:
 		return simple_instruction("OP_POP", position);
+	case OP_CLOSE_UPVALUE:
+		return simple_instruction("OP_CLOSE_UPVALUE", position);
 	case OP_DEFINE_GLOBAL:
 		return constant_instruction("OP_DEFINE_GLOBAL", chunk, position);
 	case OP_GET_GLOBAL:
@@ -92,6 +95,10 @@ int disassemble_instruction(Chunk* chunk, int position) {
 		return byte_instruction("OP_GET_LOCAL", chunk, position);
 	case OP_SET_LOCAL:
 		return byte_instruction("OP_SET_LOCAL", chunk, position);
+	case OP_GET_UPVALUE:
+		return byte_instruction("OP_GET_UPVALUE", chunk, position);
+	case OP_SET_UPVALUE:
+		return byte_instruction("OP_SET_UPVALUE", chunk, position);
 	case OP_CONSTANT:
 		return constant_instruction("OP_CONSTANT", chunk, position);
 	case OP_JUMP:
@@ -107,7 +114,13 @@ int disassemble_instruction(Chunk* chunk, int position) {
     	printf("%-16s %4d ", "OP_CLOSURE", constant);
     	print_value(chunk->constants.values[constant]);
     	printf("\n");
-    	return position + 1;
+    	ObjFunction* func = AS_FUNCTION(chunk->constants.values[constant]);
+    	for(int i = 0; i < func->upvalue_count; i++) {
+    		int is_local = chunk->code[position++];
+    		int index = chunk->code[position++];
+    		printf("%04d      | %s %d\n", position - 2, is_local ? "local" : "upvalue", index);
+    	}
+    	return position;
     }
 	default: {
 		printf("ERROR: UNDEFINED OPCODE: %d\n", opcode);
