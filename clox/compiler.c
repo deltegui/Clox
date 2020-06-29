@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "compiler.h"
-#include "scanner.h"
+#include "preproc.h"
 #include "object.h"
 
 #ifdef DEBUG_PRINT_CODE
@@ -126,49 +126,51 @@ static void begin_scope();
 static void end_scope();
 
 ParseRule rules[] = {
-  { grouping, call,    PREC_CALL },       // TOKEN_LEFT_PAREN
-  { NULL,     NULL,    PREC_NONE },       // TOKEN_RIGHT_PAREN
-  { NULL,     NULL,    PREC_NONE },       // TOKEN_LEFT_BRACE
-  { NULL,     NULL,    PREC_NONE },       // TOKEN_RIGHT_BRACE
-  { NULL,     NULL,    PREC_NONE },       // TOKEN_COMMA
-  { NULL,     NULL,    PREC_NONE },       // TOKEN_DOT
-  { unary,    binary,  PREC_TERM },       // TOKEN_MINUS
-  { NULL,     binary,  PREC_TERM },       // TOKEN_PLUS
-  { NULL,     NULL,    PREC_NONE },       // TOKEN_SEMICOLON
-  { NULL,     binary,  PREC_FACTOR },     // TOKEN_SLASH
-  { NULL,     binary,  PREC_FACTOR },     // TOKEN_STAR
-  { NULL,     binary,  PREC_FACTOR },     // TOKEN_PERCENT
-  { unary,    NULL,    PREC_NONE },       // TOKEN_BANG
-  { NULL,     binary,  PREC_EQUALITY },   // TOKEN_BANG_EQUAL
-  { NULL,     NULL,    PREC_NONE },       // TOKEN_EQUAL
-  { NULL,     binary,  PREC_EQUALITY },   // TOKEN_EQUAL_EQUAL
-  { NULL,     binary,  PREC_COMPARISON }, // TOKEN_GREATER
-  { NULL,     binary,  PREC_COMPARISON }, // TOKEN_GREATER_EQUAL
-  { NULL,     binary,  PREC_COMPARISON }, // TOKEN_LESS
-  { NULL,     binary,  PREC_COMPARISON }, // TOKEN_LESS_EQUAL
-  { variable, NULL,    PREC_NONE },       // TOKEN_IDENTIFIER
-  { string,   NULL,    PREC_NONE },       // TOKEN_STRING
-  { number,   NULL,    PREC_NONE },       // TOKEN_NUMBER
-  { NULL,     and_,    PREC_AND },        // TOKEN_AND
-  { NULL,     NULL,    PREC_NONE },       // TOKEN_CLASS
-  { NULL,     NULL,    PREC_NONE },       // TOKEN_ELSE
-  { literal,  NULL,    PREC_NONE },       // TOKEN_FALSE
-  { NULL,     NULL,    PREC_NONE },       // TOKEN_FOR
-  { NULL,     NULL,    PREC_NONE },       // TOKEN_FUN
-  { NULL,     NULL,    PREC_NONE },       // TOKEN_IF
-  { literal,  NULL,    PREC_NONE },       // TOKEN_NIL
-  { NULL,     or_,    PREC_OR },          // TOKEN_OR
-  { NULL,     NULL,    PREC_NONE },       // TOKEN_PRINT
-  { NULL,     NULL,    PREC_NONE },       // TOKEN_RETURN
-  { NULL,     NULL,    PREC_NONE },       // TOKEN_SUPER
-  { NULL,     NULL,    PREC_NONE },       // TOKEN_THIS
-  { literal,  NULL,    PREC_NONE },       // TOKEN_TRUE
-  { NULL,     NULL,    PREC_NONE },       // TOKEN_VAR
-  { NULL,     NULL,    PREC_NONE },       // TOKEN_WHILE
-  { NULL,     NULL,    PREC_NONE },       // TOKEN_BREAK
-  { NULL,     NULL,    PREC_NONE },       // TOKEN_CONTINUE
-  { NULL,     NULL,    PREC_NONE },       // TOKEN_ERROR
-  { NULL,     NULL,    PREC_NONE },       // TOKEN_EOF
+	{ grouping, call,    PREC_CALL },       // TOKEN_LEFT_PAREN
+	{ NULL,     NULL,    PREC_NONE },       // TOKEN_RIGHT_PAREN
+	{ NULL,     NULL,    PREC_NONE },       // TOKEN_LEFT_BRACE
+	{ NULL,     NULL,    PREC_NONE },       // TOKEN_RIGHT_BRACE
+	{ NULL,     NULL,    PREC_NONE },       // TOKEN_COMMA
+	{ NULL,     NULL,    PREC_NONE },       // TOKEN_DOT
+	{ unary,    binary,  PREC_TERM },       // TOKEN_MINUS
+	{ NULL,     binary,  PREC_TERM },       // TOKEN_PLUS
+	{ NULL,     NULL,    PREC_NONE },       // TOKEN_SEMICOLON
+	{ NULL,     binary,  PREC_FACTOR },     // TOKEN_SLASH
+	{ NULL,     binary,  PREC_FACTOR },     // TOKEN_STAR
+	{ NULL,     binary,  PREC_FACTOR },     // TOKEN_PERCENT
+	{ NULL,     NULL,    PREC_NONE },       // TOKEN_PAD
+	{ unary,    NULL,    PREC_NONE },       // TOKEN_BANG
+	{ NULL,     binary,  PREC_EQUALITY },   // TOKEN_BANG_EQUAL
+	{ NULL,     NULL,    PREC_NONE },       // TOKEN_EQUAL
+	{ NULL,     binary,  PREC_EQUALITY },   // TOKEN_EQUAL_EQUAL
+	{ NULL,     binary,  PREC_COMPARISON }, // TOKEN_GREATER
+	{ NULL,     binary,  PREC_COMPARISON }, // TOKEN_GREATER_EQUAL
+	{ NULL,     binary,  PREC_COMPARISON }, // TOKEN_LESS
+	{ NULL,     binary,  PREC_COMPARISON }, // TOKEN_LESS_EQUAL
+	{ variable, NULL,    PREC_NONE },       // TOKEN_IDENTIFIER
+	{ string,   NULL,    PREC_NONE },       // TOKEN_STRING
+	{ number,   NULL,    PREC_NONE },       // TOKEN_NUMBER
+	{ NULL,     and_,    PREC_AND },        // TOKEN_AND
+	{ NULL,     NULL,    PREC_NONE },       // TOKEN_CLASS
+	{ NULL,     NULL,    PREC_NONE },       // TOKEN_ELSE
+	{ literal,  NULL,    PREC_NONE },       // TOKEN_FALSE
+	{ NULL,     NULL,    PREC_NONE },       // TOKEN_FOR
+	{ NULL,     NULL,    PREC_NONE },       // TOKEN_FUN
+	{ NULL,     NULL,    PREC_NONE },       // TOKEN_IF
+	{ literal,  NULL,    PREC_NONE },       // TOKEN_NIL
+	{ NULL,     or_,    PREC_OR },          // TOKEN_OR
+	{ NULL,     NULL,    PREC_NONE },       // TOKEN_PRINT
+	{ NULL,     NULL,    PREC_NONE },       // TOKEN_RETURN
+	{ NULL,     NULL,    PREC_NONE },       // TOKEN_SUPER
+	{ NULL,     NULL,    PREC_NONE },       // TOKEN_THIS
+	{ literal,  NULL,    PREC_NONE },       // TOKEN_TRUE
+	{ NULL,     NULL,    PREC_NONE },       // TOKEN_VAR
+	{ NULL,     NULL,    PREC_NONE },       // TOKEN_WHILE
+	{ NULL,     NULL,    PREC_NONE },       // TOKEN_BREAK
+	{ NULL,     NULL,    PREC_NONE },       // TOKEN_CONTINUE
+	{ NULL,     NULL,    PREC_NONE },		  // TOKEN_INCLUDE
+	{ NULL,     NULL,    PREC_NONE },       // TOKEN_ERROR
+	{ NULL,     NULL,    PREC_NONE },       // TOKEN_EOF
 };
 
 static ParseRule* get_rule(TokenType type) {
@@ -275,7 +277,7 @@ static void error(const char* message) {
 static void advance() {
 	parser.previous = parser.current;
 	for (;;) {
-		parser.current = scan_token();
+		parser.current = scan_preproc_token();
 #ifdef DEBUG_PRINT_SCAN
 		printf("%s\n", get_token_str(parser.current.type));
 #endif
@@ -855,17 +857,18 @@ static int add_upvalue(Compiler* compiler, uint8_t index, bool is_local) {
 	return compiler->func->upvalue_count++;
 }
 
-ObjFunction* compile(const char* source) {
-	init_scanner(source);
-	init_loop_metadata();
-	Compiler compiler;
-	init_compiler(&compiler, TYPE_SCRIPT);
-	parser.had_error = false;
-	parser.panic_mode = false;
-	advance();
-	while(!match(TOKEN_EOF)) {
-		declaration();
-	}
-	ObjFunction* func = end_compiler();
-	return parser.had_error ? NULL : func;
+ObjFunction* compile(const char* main_file) {
+    init_preproc(main_file);
+    init_loop_metadata();
+    Compiler compiler;
+    init_compiler(&compiler, TYPE_SCRIPT);
+    parser.had_error = false;
+    parser.panic_mode = false;
+    advance();
+    while(!match(TOKEN_EOF)) {
+        declaration();
+    }
+    ObjFunction* func = end_compiler();
+    free_preproc();
+    return parser.had_error ? NULL : func;
 }

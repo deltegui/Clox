@@ -17,6 +17,7 @@ char* tokens_names[] = {
 	"TOKEN_SEMICOLON", "TOKEN_SLASH", "TOKEN_STAR", "TOKEN_PERCENT",
 
 	// One or two character tokens.
+    "TOKEN_PAD",
 	"TOKEN_BANG", "TOKEN_BANG_EQUAL",
 	"TOKEN_EQUAL", "TOKEN_EQUAL_EQUAL",
 	"TOKEN_GREATER", "TOKEN_GREATER_EQUAL",
@@ -31,6 +32,9 @@ char* tokens_names[] = {
 	"TOKEN_PRINT", "TOKEN_RETURN", "TOKEN_SUPER", "TOKEN_THIS",
 	"TOKEN_TRUE", "TOKEN_VAR", "TOKEN_WHILE", "TOKEN_BREAK",
 	"TOKEN_CONTINUE",
+
+    // Directives
+    "TOKEN_INCLUDE",
 
 	"TOKEN_ERROR",
 	"TOKEN_EOF"

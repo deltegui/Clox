@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.13)
+project(clox)
+set(CMAKE_C_STANDARD)
+file(GLOB SOURCE_FILES *.c)
+add_executable(clox ${SOURCE_FILES})
+target_link_libraries(clox m)

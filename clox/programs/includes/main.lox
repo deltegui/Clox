@@ -1,0 +1,3 @@
+#include "other.lox"
+
+print "here we are, in main.lox";

@@ -10,6 +10,7 @@ typedef enum {
 	TOKEN_PERCENT,
 
 	// One or two character tokens.
+    TOKEN_PAD,
 	TOKEN_BANG, TOKEN_BANG_EQUAL,
 	TOKEN_EQUAL, TOKEN_EQUAL_EQUAL,
 	TOKEN_GREATER, TOKEN_GREATER_EQUAL,
@@ -25,6 +26,9 @@ typedef enum {
 	TOKEN_TRUE, TOKEN_VAR, TOKEN_WHILE, TOKEN_BREAK,
 	TOKEN_CONTINUE,
 
+    // Directives
+    TOKEN_INCLUDE,
+
 	TOKEN_ERROR,
 	TOKEN_EOF
 } TokenType;
@@ -36,7 +40,14 @@ typedef struct {
 	int line;
 } Token;
 
-void init_scanner(const char* source);
-Token scan_token();
+typedef struct {
+	const char* start;
+	const char* current;
+	int line;
+} Scanner;
+
+Scanner* init_scanner(const char* source);
+void free_scanner(Scanner* scanner);
+Token scan_token(Scanner* scanner);
 
 #endif

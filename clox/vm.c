@@ -45,8 +45,8 @@ void free_vm() {
 	free_objects();
 }
 
-InterpretResult interpret(const char* source) {
-	ObjFunction* func = compile(source);
+InterpretResult interpret(const char* main_file) {
+	ObjFunction* func = compile(main_file);
 	if(func == NULL) {
 		return INTERPRET_COMPILE_ERROR;
 	}

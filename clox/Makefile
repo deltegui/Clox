@@ -4,7 +4,7 @@ build-folder:
 	mkdir ./build
 
 build: build-folder
-	gcc ./*.c && mv ./a.out ./build/clox
+	gcc -lm ./*.c && mv ./a.out ./build/clox
 
 clean:
 	rm -rf ./build
