@@ -36,6 +36,10 @@ void init_vm() {
 	init_table(&vm.strings);
 	init_table(&vm.globals);
 
+	vm.gray_capacity = 0;
+	vm.gray_count = 0;
+	vm.gray_stack = NULL;
+
 	define_native("clock", clock_native);
 }
 
@@ -43,6 +47,7 @@ void free_vm() {
 	free_table(&vm.globals);
 	free_table(&vm.strings);
 	free_objects();
+	free(vm.gray_stack);
 }
 
 InterpretResult interpret(const char* source) {

@@ -22,11 +22,16 @@ typedef struct {
 	Value stack[STACK_MAX];
 	Value* stack_top;
 
-	struct sObj* objects;
+	Obj* objects;
 	ObjUpvalue* open_upvalues;
 
 	Table strings; // Interning
 	Table globals; // Global variables
+
+	// GC gray nodes
+	int gray_capacity;
+	int gray_count;
+	Obj** gray_stack;
 } VM;
 
 typedef enum {

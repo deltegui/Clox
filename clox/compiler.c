@@ -4,6 +4,7 @@
 #include "compiler.h"
 #include "scanner.h"
 #include "object.h"
+#include "memory.h"
 
 #ifdef DEBUG_PRINT_CODE
 #include "debug.h"
@@ -869,4 +870,12 @@ ObjFunction* compile(const char* source) {
 	}
 	ObjFunction* func = end_compiler();
 	return parser.had_error ? NULL : func;
+}
+
+void mark_compiler_roots() {
+	Compiler* compiler = current;
+	while (compiler != NULL) {
+		mark_object((Obj*)compiler->func);
+		compiler = compiler->enclosing;
+	}
 }

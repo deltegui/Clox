@@ -20,6 +20,7 @@ bool table_set(Table* table, ObjString* key, Value value);
 void table_add_all(Table* from, Table* to);
 bool table_get(Table* table, ObjString* key, Value* value);
 bool table_delete(Table* table, ObjString* key);
+void mark_table(Table* table);
 ObjString* table_find_string(Table* table, const char* chars, int length, uint32_t hash);
 
 #endif

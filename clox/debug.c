@@ -36,6 +36,18 @@ char* tokens_names[] = {
 	"TOKEN_EOF"
 };
 
+char* obj_names[] = {
+	"OBJ_STRING",
+    "OBJ_FUNCTION",
+    "OBJ_NATIVE",
+    "OBJ_CLOSURE",
+    "OBJ_UPVALUE",
+};
+
+char* get_obj_str(int obj_type) {
+	return obj_names[obj_type];
+}
+
 char* get_token_str(int token) {
 	return tokens_names[token];
 }

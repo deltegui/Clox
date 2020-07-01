@@ -19,6 +19,9 @@
     reallocate(pointer, sizeof(type), 0)
 
 void* reallocate(void* oldptr, size_t old_count, size_t count);
+void collect_garbage();
+void mark_value(Value value);
+void mark_object(Obj* object);
 void free_object(Obj* object);
 
 #endif

@@ -6,6 +6,7 @@
 #include "values.h"
 #include "table.h"
 #include "vm.h"
+#include "debug.h"
 
 #define ALLOCATE_OBJ(type, objectType) \
     (type*)allocate_object(sizeof(type), objectType)
@@ -38,8 +39,12 @@ static ObjString* allocate_string(const char* chars, int length, uint32_t hash) 
 static Obj* allocate_object(size_t size, ObjType type) {
     Obj* object = (Obj*)reallocate(NULL, 0, size);
     object->type = type;
+    object->is_marked = false;
     object->next = vm.objects;
     vm.objects = object;
+#ifdef DEBUG_LOG_GC
+    printf("%p allocate %ld for %s\n", (void*)object, size, get_obj_str(type));
+#endif
     return object;
 }
 
