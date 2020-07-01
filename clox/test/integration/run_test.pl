@@ -32,9 +32,9 @@ sub clean_entry {
 	return $_[0];
 }
 
-my $prog_dir = "./programs";
-my $test_dir = "./test/cases";
-my $clox_bin = "./build/clox";
+my $prog_dir = "../../programs";
+my $test_dir = "./cases";
+my $clox_bin = "../../build/clox";
 
 my %prog = read_files_as_hash($prog_dir);
 my %tests = read_files_as_hash($test_dir);
