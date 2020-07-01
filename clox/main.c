@@ -15,8 +15,7 @@ int main(int argc, char** argv) {
 	}
 	else if (argc == 2) {
 		run_file(argv[1]);
-	}
-	else {
+	} else {
 		fprintf(stderr, "Wrong number of parameters: %d\n", argc);
 		fprintf(stderr, "Usage: clox [path] to run a file or clox to run REPL\n");
 		free_vm();
