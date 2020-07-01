@@ -624,15 +624,16 @@ static void if_stmt() {
 
 static int emit_jump(uint8_t op_code) {
 	emit_byte(op_code);
-	emit_byte(0xff);
+	emit_byte(0xff); // Temporal chunk direction to jump
 	emit_byte(0xff);
 	return current_chunk()->size - 2;
 }
 
 static void patch_jump(int jump_position) {
 	Chunk* chunk = current_chunk();
-	int jump = chunk->size - jump_position - 2;
 
+	// Check if the size to jump is too big
+	int jump = chunk->size - jump_position - 2;
 	if(jump > UINT16_MAX) {
 		error("Too much code to jump over");
 	}
