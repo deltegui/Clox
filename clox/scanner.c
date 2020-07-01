@@ -131,7 +131,7 @@ static TokenType identifier_type() {
 	case 'c':
 		if (scanner.current - scanner.start > 1) {
 			switch(scanner.start[1]) {
-			case 'l': return check_keyword(2, 4, "ass", TOKEN_CLASS);
+			case 'l': return check_keyword(2, 3, "ass", TOKEN_CLASS);
 			case 'o': return check_keyword(2, 6, "ntinue", TOKEN_CONTINUE);
 			}
 		}
