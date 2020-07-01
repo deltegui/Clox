@@ -6,3 +6,4 @@ clox.vcxproj*
 *.out
 .DS_Store
 build
+*.swp
