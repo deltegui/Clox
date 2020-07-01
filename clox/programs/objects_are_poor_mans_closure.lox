@@ -1,0 +1,40 @@
+// En esta url http://wiki.c2.com/?ClosuresAndObjectsAreEquivalent hay un
+// artículo que dice que "objects are poor man's closure". En otras palabras
+// ¿Quén quiere objectos teniendo closures?.
+//
+// Aquí hay una demostración en lox que una closure puede ser perfectamente
+// un objeto. (También es una demo de funcionamiento de closures en el lenguaje)
+
+fun newVector(x, y) {
+    fun getX() {
+        return x;
+    }
+
+    fun getY() {
+        return y;
+    }
+
+    fun sumOther(other) {
+        var new_x = other("getX", nil) + x;
+        var new_y = other("getY", nil) + y;
+        return newVector(new_x, new_y);
+    }
+
+    fun distpacth_message(fn_name, param) {
+        if(fn_name == "getX") return getX();
+        if(fn_name == "getY") return getY();
+        if(fn_name == "sumOther") return sumOther(param);
+    }
+
+    return distpacth_message;
+}
+
+var v = newVector(1, 3);
+print v("getX", nil);
+print v("getY", nil);
+
+var u = newVector(4, 1);
+
+var other = v("sumOther", u);
+print other("getX", nil);
+print other("getY", nil);
