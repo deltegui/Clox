@@ -8,12 +8,21 @@
 #include "debug.h"
 #endif
 
+#define GC_HEAP_GROW_FACTOR 2
+
 void* reallocate(void* oldptr, size_t old_count, size_t count) {
+	vm.bytes_allocated += count - old_count;
+
 	if(count > old_count) {
 #ifdef DEBUG_STRESS_GC
 		collect_garbage();
 #endif
 	}
+
+	if(vm.bytes_allocated > vm.next_gc) {
+		collect_garbage();
+	}
+
 	if (count == 0) {
 		free(oldptr);
 		return NULL;
@@ -145,20 +154,11 @@ static void sweep() {
 	Obj* previous = NULL;
 	Obj* object = vm.objects;
 	while (object != NULL) {
-#ifdef DEBUG_LOG_GC
-		printf("%p sweep for object: [%s]\n", (void*)object, get_obj_str(object->type));
-#endif
 		if (object->is_marked) {
-#ifdef DEBUG_LOG_GC
-			printf("%p sweep object is marked. It'll survive: [%s]\n", (void*)object, get_obj_str(object->type));
-#endif
 			object->is_marked = false;
 			previous = object;
 			object = object->next;
 		} else {
-#ifdef DEBUG_LOG_GC
-			printf("%p sweep: object is going to die [%s]\n", (void*)object, get_obj_str(object->type));
-#endif
 			Obj* unreached = object;
 
 			object = object->next;
@@ -176,12 +176,21 @@ static void sweep() {
 void collect_garbage() {
 #ifdef DEBUG_LOG_GC
 	printf("-- gc begin\n");
+	size_t before = vm.bytes_allocated;
 #endif
 	mark_roots();
 	trace_references();
 	table_remove_white(&vm.strings);
 	sweep();
+
+	vm.next_gc = vm.bytes_allocated * GC_HEAP_GROW_FACTOR;
+
 #ifdef DEBUG_LOG_GC
+	printf("COLLECTED: %ld bytes (from %ld to %ld) next at %ld\n",
+		before - vm.bytes_allocated,
+		before,
+		vm.bytes_allocated,
+		vm.next_gc);
 	printf("-- gc end\n");
 #endif
 }

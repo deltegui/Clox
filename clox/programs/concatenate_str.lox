@@ -1,0 +1,11 @@
+// THIS SHIT FAILS. GC IS NOT WORKING WELL WITH THIS TYPE OF THINGS.
+// There are drangons inside
+
+var times = 800;
+
+var output = "";
+while(times > 0) {
+    output = output + "lox ";
+    times = times - 1;
+}
+print output;

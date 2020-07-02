@@ -38,6 +38,9 @@ void init_vm() {
 	vm.gray_count = 0;
 	vm.gray_stack = NULL;
 
+	vm.bytes_allocated = 0;
+	vm.next_gc = 1024 * 1024;
+
 	define_native("clock", clock_native);
 }
 
@@ -314,8 +317,8 @@ static void runtime_error(const char* format, ...) {
 }
 
 static void concatenate_str() {
-	ObjString* b = AS_STRING(stack_pop());
-	ObjString* a = AS_STRING(stack_pop());
+	ObjString* b = AS_STRING(stack_peek(0));
+	ObjString* a = AS_STRING(stack_peek(1));
 
 	int length = b->length + a->length;
 	char* chars = ALLOCATE(char, length + 1);
@@ -324,6 +327,8 @@ static void concatenate_str() {
 	chars[length] = '\0';
 
 	ObjString* result = take_string(chars, length);
+	stack_pop();
+	stack_pop();
 	stack_push(OBJ_VALUE(result));
 }
 

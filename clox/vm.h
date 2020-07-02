@@ -25,6 +25,9 @@ typedef struct {
 	Obj* objects;
 	ObjUpvalue* open_upvalues;
 
+	size_t bytes_allocated; // Things to know when to trigger GC.
+	size_t next_gc;
+
 	Table strings; // Interning
 	Table globals; // Global variables
 
