@@ -32,7 +32,9 @@ static ObjString* allocate_string(const char* chars, int length, uint32_t hash) 
     string->length = length;
     string->chars = (char *)chars;
     string->hash = hash;
+    stack_push(OBJ_VALUE(string)); // GC mark needs to discover our object.
     table_set(&vm.strings, string, NIL_VALUE());
+    stack_pop(); // GC its safe now.
     return string;
 }
 
@@ -101,11 +103,11 @@ ObjNative* new_native(NativeFn function) {
 }
 
 ObjClosure* new_closure(ObjFunction* function) {
-    ObjClosure* closure = ALLOCATE_OBJ(ObjClosure, OBJ_CLOSURE);
     ObjUpvalue** upvalues = ALLOCATE(ObjUpvalue*, function->upvalue_count);
     for(int i = 0; i < function->upvalue_count; i++) {
         upvalues[i] = NULL;
     }
+    ObjClosure* closure = ALLOCATE_OBJ(ObjClosure, OBJ_CLOSURE);
     closure->function = function;
     closure->upvalues = upvalues;
     closure->upvalue_count = function->upvalue_count;

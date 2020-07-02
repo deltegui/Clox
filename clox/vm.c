@@ -12,8 +12,6 @@
 VM vm;
 
 static InterpretResult run();
-static void stack_push(Value value);
-static Value stack_pop();
 static void stack_reset();
 static Value stack_peek(int distance);
 static void runtime_error(const char* format, ...);
@@ -276,12 +274,12 @@ static void stack_reset() {
 	vm.frames_count = 0;
 }
 
-static void stack_push(Value value) {
+void stack_push(Value value) {
 	*vm.stack_top = value;
 	vm.stack_top++;
 }
 
-static Value stack_pop() {
+Value stack_pop() {
 	vm.stack_top--;
 	return *vm.stack_top;
 }

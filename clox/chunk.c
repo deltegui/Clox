@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include "chunk.h"
 #include "memory.h"
+#include "vm.h"
 
 #define INIT_CHUNK_SIZE 4
 
@@ -39,7 +40,11 @@ void free_chunk(Chunk* chunk) {
 	init_chunk(chunk);
 }
 
+#include <stdio.h>
+
 int add_constant(Chunk* chunk, Value value) {
+	stack_push(value); // Save value not to be killed by GC mark
 	write_valuearray(&chunk->constants, value);
+	stack_pop(); // Now it's safe
 	return chunk->constants.size - 1; //index of stored constant
 }

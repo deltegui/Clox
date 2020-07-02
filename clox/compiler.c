@@ -6,7 +6,7 @@
 #include "object.h"
 #include "memory.h"
 
-#ifdef DEBUG_PRINT_CODE
+#if defined(DEBUG_PRINT_CODE) || defined(DEBUG_PRINT_SCAN)
 #include "debug.h"
 #endif
 

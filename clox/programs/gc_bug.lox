@@ -1,0 +1,5 @@
+fun outer() {
+    return "HOLA";
+}
+
+print outer();
