@@ -109,6 +109,7 @@ static void emit_loop(int back_pos);
 static void grouping(bool can_assign);
 static void binary(bool can_assign);
 static void unary(bool can_assign);
+static void dot(bool can_assign);
 static void number(bool can_assign);
 static void literal(bool can_assign);
 static void string(bool can_assign);
@@ -133,7 +134,7 @@ ParseRule rules[] = {
 	{ NULL,     NULL,    PREC_NONE },       // TOKEN_LEFT_BRACE
 	{ NULL,     NULL,    PREC_NONE },       // TOKEN_RIGHT_BRACE
 	{ NULL,     NULL,    PREC_NONE },       // TOKEN_COMMA
-	{ NULL,     NULL,    PREC_NONE },       // TOKEN_DOT
+	{ NULL,     dot,     PREC_CALL },       // TOKEN_DOT
 	{ unary,    binary,  PREC_TERM },       // TOKEN_MINUS
 	{ NULL,     binary,  PREC_TERM },       // TOKEN_PLUS
 	{ NULL,     NULL,    PREC_NONE },       // TOKEN_SEMICOLON
@@ -788,6 +789,18 @@ static void variable(bool can_assign) {
 static void call(bool can_assign) {
 	uint8_t arg_count = argument_list();
 	emit_bytes(OP_CALL, arg_count);
+}
+
+static void dot(bool can_assign) {
+	consume(TOKEN_IDENTIFIER, "Expected identifier after <dot>");
+	uint8_t name = identifier_constant(&parser.previous);
+
+	if(can_assign && match(TOKEN_EQUAL)) {
+		expression();
+		emit_bytes(OP_SET_PROPERTY, name);
+	} else {
+		emit_bytes(OP_GET_PROPERTY, name);
+	}
 }
 
 static uint8_t argument_list() {

@@ -266,6 +266,38 @@ static InterpretResult run() {
 			stack_push(OBJ_VALUE(new_class(READ_STRING())));
 			break;
 		}
+		case OP_GET_PROPERTY: {
+			if (!IS_INSTANCE(stack_peek(0))) {
+				runtime_error("Only instances have properties.");
+				return INTERPRET_RUNTIME_ERROR;
+			}
+
+			ObjInstance* instance = AS_INSTANCE(stack_peek(0));
+			ObjString* name = READ_STRING();
+
+			Value value;
+			if (table_get(&instance->fields, name, &value)) {
+				stack_pop(); // Instance.
+				stack_push(value);
+				break;
+			}
+
+			runtime_error("Undefined property '%s'.", name->chars);
+        	return INTERPRET_RUNTIME_ERROR;
+		}
+		case OP_SET_PROPERTY: {
+			if (!IS_INSTANCE(stack_peek(1))) {
+				runtime_error("Only instances have fields.");
+				return INTERPRET_RUNTIME_ERROR;
+			}
+			ObjInstance* instance = AS_INSTANCE(stack_peek(1));
+			table_set(&instance->fields, READ_STRING(), stack_peek(0));
+
+			Value value = stack_pop();
+			stack_pop();
+			stack_push(value);
+			break;
+		}
 		}
 	}
 #undef BINARY_OP
@@ -338,6 +370,11 @@ static void concatenate_str() {
 
 static bool call_value(Value callee, int arg_count) {
 	switch(OBJ_TYPE(callee)) {
+	case OBJ_CLASS: {
+		ObjClass* klass = AS_CLASS(callee);
+		vm.stack_top[-arg_count - 1] = OBJ_VALUE(new_instance(klass));
+		return true;
+	}
 	case OBJ_CLOSURE: return call(AS_CLOSURE(callee), arg_count);
 	case OBJ_NATIVE: {
 		NativeFn native = AS_NATIVE(callee);

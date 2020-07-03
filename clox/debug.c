@@ -43,6 +43,7 @@ char* obj_names[] = {
     "OBJ_CLOSURE",
     "OBJ_UPVALUE",
 	"OBJ_CLASS",
+	"OBJ_INSTANCE",
 };
 
 char* get_obj_str(int obj_type) {
@@ -137,6 +138,10 @@ int disassemble_instruction(Chunk* chunk, int position) {
     }
 	case OP_CLASS:
 		return constant_instruction("OP_CLASS", chunk, position);
+	case OP_GET_PROPERTY:
+		return constant_instruction("OP_GET_PROPERTY", chunk, position);
+	case OP_SET_PROPERTY:
+		return constant_instruction("OP_SET_PROPERTY", chunk, position);
 	default: {
 		printf("ERROR: UNDEFINED OPCODE: %d\n", opcode);
 		return position + 1;

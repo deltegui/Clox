@@ -1,2 +1,6 @@
 class PipoElPerro {}
-print PipoElPerro;
+print PipoElPerro();
+var a = PipoElPerro();
+print a.name = "pipo";
+print a.age = "5";
+print a.name + ", " + a.age;
