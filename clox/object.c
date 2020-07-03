@@ -57,6 +57,7 @@ void print_object(Value value) {
     case OBJ_STRING: printf("%s", AS_CSTRING(value)); break;
     case OBJ_NATIVE: printf("<native code>"); break;
     case OBJ_UPVALUE: printf("upvalue"); break;
+    case OBJ_CLASS: printf("Class %s", AS_CLASS(value)->name->chars); break;
     }
 }
 
@@ -120,4 +121,10 @@ ObjUpvalue* new_upvalue(Value* slot) {
     upvalue->next = NULL;
     upvalue->closed = NIL_VALUE();
     return upvalue;
+}
+
+ObjClass* new_class(ObjString* name) {
+    ObjClass* klass = ALLOCATE_OBJ(ObjClass, OBJ_CLASS);
+    klass->name = name;
+    return klass;
 }

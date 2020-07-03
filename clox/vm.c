@@ -262,6 +262,10 @@ static InterpretResult run() {
 			stack_pop();
 			break;
 		}
+		case OP_CLASS: {
+			stack_push(OBJ_VALUE(new_class(READ_STRING())));
+			break;
+		}
 		}
 	}
 #undef BINARY_OP

@@ -60,6 +60,10 @@ void free_object(Obj* object) {
     	FREE(ObjUpvalue, object);
     	break;
     }
+	case OBJ_CLASS: {
+		FREE(ObjClass, object);
+		break;
+	}
   }
 }
 
@@ -136,6 +140,11 @@ static void blacken_object(Obj* obj) {
 	case OBJ_UPVALUE:
 		mark_value(((ObjUpvalue*)obj)->closed);
 		break;
+	case OBJ_CLASS: {
+		ObjClass* klass = (ObjClass*)obj;
+		mark_object((Obj*)klass->name);
+		break;
+	}
 	case OBJ_NATIVE:
 	case OBJ_STRING:
 		break; // These object havent childs
