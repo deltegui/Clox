@@ -1,7 +1,4 @@
-// THIS SHIT FAILS. GC IS NOT WORKING WELL WITH THIS TYPE OF THINGS.
-// There are drangons inside
-
-var times = 9000;
+var times = 900;
 
 var output = "";
 while(times > 0) {
