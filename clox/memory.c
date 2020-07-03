@@ -17,10 +17,9 @@ void* reallocate(void* oldptr, size_t old_count, size_t count) {
 #ifdef DEBUG_STRESS_GC
 		collect_garbage();
 #endif
-	}
-
-	if(vm.bytes_allocated > vm.next_gc) {
-		collect_garbage();
+		if(vm.bytes_allocated > vm.next_gc) {
+			collect_garbage();
+		}
 	}
 
 	if (count == 0) {
@@ -154,11 +153,20 @@ static void sweep() {
 	Obj* previous = NULL;
 	Obj* object = vm.objects;
 	while (object != NULL) {
+#ifdef DEBUG_LOG_GC
+		printf("%p sweep for object: [%s]\n", (void*)object, get_obj_str(object->type));
+#endif
 		if (object->is_marked) {
+#ifdef DEBUG_LOG_GC
+			printf("%p sweep object is marked. It'll survive: [%s]\n", (void*)object, get_obj_str(object->type));
+#endif
 			object->is_marked = false;
 			previous = object;
 			object = object->next;
 		} else {
+#ifdef DEBUG_LOG_GC
+			printf("%p sweep: object is going to die [%s]\n", (void*)object, get_obj_str(object->type));
+#endif
 			Obj* unreached = object;
 
 			object = object->next;
