@@ -22,6 +22,7 @@ static bool call(ObjClosure* closure, int arg_count);
 static void define_native(const char* name, NativeFn native);
 static ObjUpvalue* capture_upvalue(Value* value);
 static void close_upvalues(Value* last);
+static void define_method(ObjString* name);
 
 static Value clock_native(int argCount, Value* args) {
  	return NUMBER_VALUE((double)clock() / CLOCKS_PER_SEC);
@@ -298,6 +299,10 @@ static InterpretResult run() {
 			stack_push(value);
 			break;
 		}
+		case OP_METHOD: {
+			define_method(READ_STRING());
+			break;
+		}
 		}
 	}
 #undef BINARY_OP
@@ -457,4 +462,11 @@ static void close_upvalues(Value* last) {
 		upvalue->location = &upvalue->closed;
 		vm.open_upvalues = upvalue->next;
 	}
+}
+
+static void define_method(ObjString* name) {
+	Value method = stack_peek(0);
+	ObjClass* klass = AS_CLASS(stack_peek(1));
+	table_set(&klass->methods, name, method);
+	stack_pop();
 }

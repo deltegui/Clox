@@ -142,6 +142,8 @@ int disassemble_instruction(Chunk* chunk, int position) {
 		return constant_instruction("OP_GET_PROPERTY", chunk, position);
 	case OP_SET_PROPERTY:
 		return constant_instruction("OP_SET_PROPERTY", chunk, position);
+	case OP_METHOD:
+		return constant_instruction("OP_METHOD", chunk, position);
 	default: {
 		printf("ERROR: UNDEFINED OPCODE: %d\n", opcode);
 		return position + 1;

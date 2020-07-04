@@ -106,6 +106,7 @@ static int emit_jump(uint8_t op_code);
 static void patch_jump(int jump_position);
 static void emit_loop(int back_pos);
 
+static void method();
 static void grouping(bool can_assign);
 static void binary(bool can_assign);
 static void unary(bool can_assign);
@@ -368,14 +369,28 @@ static void declaration() {
 
 static void class_declaration() {
 	consume(TOKEN_IDENTIFIER, "Expected class name");
+	Token class_name = parser.previous;
 	uint8_t name_constant = identifier_constant(&parser.previous);
 	declare_variable();
 
 	emit_bytes(OP_CLASS, name_constant);
 	define_variable(name_constant);
 
+	named_variable(class_name, false);
 	consume(TOKEN_LEFT_BRACE, "Expect '{' before class body.");
+	while(!check(TOKEN_RIGHT_BRACE) && !check(TOKEN_EOF)) {
+		method();
+	}
 	consume(TOKEN_RIGHT_BRACE, "Expect '}' after class body.");
+	emit_byte(OP_POP);
+}
+
+static void method() {
+	consume(TOKEN_IDENTIFIER, "Expected method name");
+	uint8_t constant = identifier_constant(&parser.previous);
+	FunctionType type = TYPE_FUNCTION;
+	function(type);
+	emit_bytes(OP_METHOD, constant);
 }
 
 static void func_declaration() {

@@ -127,6 +127,7 @@ ObjUpvalue* new_upvalue(Value* slot) {
 ObjClass* new_class(ObjString* name) {
     ObjClass* klass = ALLOCATE_OBJ(ObjClass, OBJ_CLASS);
     klass->name = name;
+    init_table(&klass->methods);
     return klass;
 }
 
