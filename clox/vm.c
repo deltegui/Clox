@@ -23,6 +23,7 @@ static void define_native(const char* name, NativeFn native);
 static ObjUpvalue* capture_upvalue(Value* value);
 static void close_upvalues(Value* last);
 static void define_method(ObjString* name);
+static bool bind_method(ObjClass* klass, ObjString* name);
 
 static Value clock_native(int argCount, Value* args) {
  	return NUMBER_VALUE((double)clock() / CLOCKS_PER_SEC);
@@ -283,8 +284,10 @@ static InterpretResult run() {
 				break;
 			}
 
-			runtime_error("Undefined property '%s'.", name->chars);
-        	return INTERPRET_RUNTIME_ERROR;
+			if(!bind_method(instance->klass, name)) {
+				return INTERPRET_RUNTIME_ERROR;
+			}
+			break;
 		}
 		case OP_SET_PROPERTY: {
 			if (!IS_INSTANCE(stack_peek(1))) {
@@ -388,6 +391,10 @@ static bool call_value(Value callee, int arg_count) {
 		stack_push(result);
 		return true;
 	}
+	case OBJ_BOUND_METHOD: {
+		ObjBoundMethod* bound = AS_BOUND_METHOD(callee);
+		return call(bound->method, arg_count);
+	}
 	default:
 		break;
 	}
@@ -469,4 +476,17 @@ static void define_method(ObjString* name) {
 	ObjClass* klass = AS_CLASS(stack_peek(1));
 	table_set(&klass->methods, name, method);
 	stack_pop();
+}
+
+static bool bind_method(ObjClass* klass, ObjString* name) {
+	Value method;
+	if(!table_get(&klass->methods, name, &method)) {
+		runtime_error("Undefined property '%s'.", name->chars);
+		return false;
+	}
+
+	ObjBoundMethod* bound = new_bound_method(stack_peek(0), AS_CLOSURE(method));
+	stack_pop();
+	stack_push(OBJ_VALUE(bound));
+	return true;
 }
