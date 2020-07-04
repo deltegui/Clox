@@ -1,0 +1,13 @@
+class Human {
+    init(name, age) {
+        this.name = name;
+        this.age = age;
+    }
+
+    say_hi() {
+        print "Hi " + this.name + ", and i'm " + this.age;
+    }
+}
+
+var manolo = Human("Manolo campoamor", "67");
+manolo.say_hi();

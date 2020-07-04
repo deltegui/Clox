@@ -24,6 +24,8 @@ static ObjUpvalue* capture_upvalue(Value* value);
 static void close_upvalues(Value* last);
 static void define_method(ObjString* name);
 static bool bind_method(ObjClass* klass, ObjString* name);
+static bool invoke(ObjString* name, int arg_count);
+static bool invoke_from_class(ObjClass* klass, ObjString* name, int arg_count);
 
 static Value clock_native(int argCount, Value* args) {
  	return NUMBER_VALUE((double)clock() / CLOCKS_PER_SEC);
@@ -43,12 +45,16 @@ void init_vm() {
 	vm.bytes_allocated = 0;
 	vm.next_gc = 1024 * 1024;
 
+	vm.init_string = NULL;
+	vm.init_string = copy_string("init", 4);
+
 	define_native("clock", clock_native);
 }
 
 void free_vm() {
 	free_table(&vm.globals);
 	free_table(&vm.strings);
+	vm.init_string = NULL;
 	free_objects();
 	free(vm.gray_stack);
 }
@@ -306,6 +312,15 @@ static InterpretResult run() {
 			define_method(READ_STRING());
 			break;
 		}
+		case OP_INVOKE: {
+			ObjString* method = READ_STRING();
+			int arg_count = READ_BYTE();
+			if (!invoke(method, arg_count)) {
+				return INTERPRET_RUNTIME_ERROR;
+			}
+			frame = &vm.frames[vm.frames_count - 1];
+			break;
+		}
 		}
 	}
 #undef BINARY_OP
@@ -381,6 +396,13 @@ static bool call_value(Value callee, int arg_count) {
 	case OBJ_CLASS: {
 		ObjClass* klass = AS_CLASS(callee);
 		vm.stack_top[-arg_count - 1] = OBJ_VALUE(new_instance(klass));
+		Value initializer;
+		if (table_get(&klass->methods, vm.init_string, &initializer)) {
+			return call(AS_CLOSURE(initializer), arg_count);
+		} else if (arg_count != 0) {
+			runtime_error("Expected 0 arguments but got %d.", arg_count);
+			return false;
+        }
 		return true;
 	}
 	case OBJ_CLOSURE: return call(AS_CLOSURE(callee), arg_count);
@@ -490,4 +512,30 @@ static bool bind_method(ObjClass* klass, ObjString* name) {
 	stack_pop();
 	stack_push(OBJ_VALUE(bound));
 	return true;
+}
+
+static bool invoke(ObjString* name, int arg_count) {
+	Value receiver = stack_peek(arg_count);
+	if (!IS_INSTANCE(receiver)) {
+		runtime_error("Only instances have methods.");
+		return false;
+	}
+
+	ObjInstance* instance = AS_INSTANCE(receiver);
+
+	Value value;
+	if (table_get(&instance->fields, name, &value)) {
+		vm.stack_top[-arg_count - 1] = value;
+		return call_value(value, arg_count);
+	}
+	return invoke_from_class(instance->klass, name, arg_count);
+}
+
+static bool invoke_from_class(ObjClass* klass, ObjString* name, int arg_count) {
+	Value method;
+	if (!table_get(&klass->methods, name, &method)) {
+		runtime_error("Undefined property '%s'.", name->chars);
+		return false;
+	}
+	return call(AS_CLOSURE(method), arg_count);
 }

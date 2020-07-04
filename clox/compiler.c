@@ -14,6 +14,7 @@ typedef enum {
 	TYPE_FUNCTION,
 	TYPE_SCRIPT,
 	TYPE_METHOD,
+	TYPE_INITIALIZER,
 } FunctionType;
 
 typedef struct {
@@ -322,7 +323,11 @@ static bool check(TokenType type) {
 }
 
 static void emit_return() {
-	emit_byte(OP_NIL);
+	if (current->type == TYPE_INITIALIZER) {
+		emit_bytes(OP_GET_LOCAL, 0);
+	} else {
+		emit_byte(OP_NIL);
+	}
 	emit_byte(OP_RETURN);
 }
 
@@ -410,6 +415,9 @@ static void method() {
 	consume(TOKEN_IDENTIFIER, "Expected method name");
 	uint8_t constant = identifier_constant(&parser.previous);
 	FunctionType type = TYPE_METHOD;
+	if (parser.previous.length == 4 && memcmp(parser.previous.start, "init", 4) == 0) {
+		type = TYPE_INITIALIZER;
+	}
 	function(type);
 	emit_bytes(OP_METHOD, constant);
 }
@@ -550,6 +558,9 @@ static void return_stmt() {
 	if(match(TOKEN_SEMICOLON)) {
 		emit_return();
 	} else {
+		if (current->type == TYPE_INITIALIZER) {
+			error("Cannot return a value from an initializer.");
+		}
 		expression();
 		consume(TOKEN_SEMICOLON, "Expected ; after return statement");
 		emit_byte(OP_RETURN);
@@ -842,6 +853,10 @@ static void dot(bool can_assign) {
 	if(can_assign && match(TOKEN_EQUAL)) {
 		expression();
 		emit_bytes(OP_SET_PROPERTY, name);
+	} else if(match(TOKEN_LEFT_PAREN)) {
+		uint8_t arg_count = argument_list();
+		emit_bytes(OP_INVOKE, name);
+		emit_byte(arg_count);
 	} else {
 		emit_bytes(OP_GET_PROPERTY, name);
 	}

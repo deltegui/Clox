@@ -6,6 +6,7 @@ static int simple_instruction(const char* name, int position);
 static int constant_instruction(const char* op_name, Chunk* chunk, int position);
 static int byte_instruction(const char* name, Chunk* chunk, int position);
 static int jump_instruction(const char* name, Chunk* chunk, int position, int direction);
+static int invoke_instruction(const char* name, Chunk* chunk, int offset);
 
 #define DIR_FORWARD 1
 #define DIR_BACKWARDS -1
@@ -144,6 +145,8 @@ int disassemble_instruction(Chunk* chunk, int position) {
 		return constant_instruction("OP_SET_PROPERTY", chunk, position);
 	case OP_METHOD:
 		return constant_instruction("OP_METHOD", chunk, position);
+	case OP_INVOKE:
+		return invoke_instruction("OP_INVOKE", chunk, position);
 	default: {
 		printf("ERROR: UNDEFINED OPCODE: %d\n", opcode);
 		return position + 1;
@@ -174,6 +177,15 @@ static int jump_instruction(const char* name, Chunk* chunk, int position, int di
 	uint16_t jump = (uint16_t)((chunk->code[position + 1] << 8) | chunk->code[position + 2]);
 	printf("%-16s %4d -> %d\n", name, jump, position + 3 + direction * jump);
 	return position + 3;
+}
+
+static int invoke_instruction(const char* name, Chunk* chunk, int offset) {
+	uint8_t constant = chunk->code[offset + 1];
+	uint8_t arg_count = chunk->code[offset + 2];
+	printf("%-16s (%d args) %4d '", name, arg_count, constant);
+	print_value(chunk->constants.values[constant]);
+	printf("'\n");
+	return offset + 3;
 }
 
 #undef DIR_BACKWARDS
