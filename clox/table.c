@@ -33,7 +33,7 @@ bool table_set(Table* table, ObjString* key, Value value) {
 }
 
 static Entry* find_entry(Entry* entries, int length, ObjString* key) {
-    uint32_t index = key->hash % length;
+    uint32_t index = key->hash & (length - 1);
     Entry* tombstone = NULL;
 
     for(;;) {
@@ -47,7 +47,7 @@ static Entry* find_entry(Entry* entries, int length, ObjString* key) {
         if(entry->label == key) {
             return entry;
         }
-        index = (index + 1) % length;
+        index = (index + 1) & (length - 1);
     }
 }
 
@@ -85,7 +85,7 @@ void table_add_all(Table *from, Table* to) {
 }
 
 bool table_get(Table* table, ObjString* key, Value* value) {
-    if(table->capacity == 0) return false;
+    if(table->count == 0) return false;
 
     Entry* entry = find_entry(table->entries, table->capacity, key);
     if(entry->label == NULL) return false;
@@ -95,7 +95,7 @@ bool table_get(Table* table, ObjString* key, Value* value) {
 }
 
 bool table_delete(Table* table, ObjString* key) {
-    if(table->capacity == 0) return false;
+    if(table->count == 0) return false;
 
     Entry* entry = find_entry(table->entries, table->capacity, key);
     if(entry->label == NULL) return false;
@@ -108,7 +108,7 @@ bool table_delete(Table* table, ObjString* key) {
 ObjString* table_find_string(Table* table, const char* chars, int length, uint32_t hash) {
     if(table->count == 0) return NULL;
 
-    uint32_t index = hash % table->capacity;
+    uint32_t index = hash & (table->capacity - 1);
 
     for(;;) {
         Entry* entry = &table->entries[index];
@@ -119,7 +119,7 @@ ObjString* table_find_string(Table* table, const char* chars, int length, uint32
             memcmp(entry->label->chars, chars, length) == 0) {
             return entry->label;
         }
-        index = (index + 1) % table->capacity;
+        index = (index + 1) & (table->capacity - 1);
     }
 }
 
