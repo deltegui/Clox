@@ -147,6 +147,12 @@ int disassemble_instruction(Chunk* chunk, int position) {
 		return constant_instruction("OP_METHOD", chunk, position);
 	case OP_INVOKE:
 		return invoke_instruction("OP_INVOKE", chunk, position);
+	case OP_INHERIT:
+	    return simple_instruction("OP_INHERIT", position);
+	case OP_GET_SUPER:
+		return constant_instruction("OP_GET_SUPER", chunk, position);
+	case OP_SUPER_INVOKE:
+		return invoke_instruction("OP_SUPER_INVOKE", chunk, position);
 	default: {
 		printf("ERROR: UNDEFINED OPCODE: %d\n", opcode);
 		return position + 1;

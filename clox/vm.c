@@ -321,6 +321,35 @@ static InterpretResult run() {
 			frame = &vm.frames[vm.frames_count - 1];
 			break;
 		}
+		case OP_INHERIT: {
+		    Value superclass = stack_peek(1);
+			if(!IS_CLASS(superclass)) {
+				runtime_error("Superclass must be a class.");
+				return INTERPRET_RUNTIME_ERROR;
+			}
+		    ObjClass* subclass = AS_CLASS(stack_peek(0));
+		    table_add_all(&AS_CLASS(superclass)->methods, &subclass->methods);
+		    stack_pop(); // Subclass
+		    break;
+		}
+		case OP_GET_SUPER: {
+			ObjString* name = READ_STRING();
+			ObjClass* superclass = AS_CLASS(stack_pop());
+			if(!bind_method(superclass, name)) {
+				return INTERPRET_RUNTIME_ERROR;
+			}
+			break;
+		}
+		case OP_SUPER_INVOKE: {
+			ObjString* method = READ_STRING();
+			int arg_count = READ_BYTE();
+			ObjClass* superclass = AS_CLASS(stack_pop());
+			if(!invoke_from_class(superclass, method, arg_count)) {
+				return INTERPRET_RUNTIME_ERROR;
+			}
+			frame = &vm.frames[vm.frames_count - 1];
+			break;
+		}
 		}
 	}
 #undef BINARY_OP
